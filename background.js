@@ -56,7 +56,7 @@ function makeListeners() {
             if (statusReceived === 1) {
                 if (!streamStatus) {
                     streamStatus = true;
-                    showNotification(topic === '' ? 'Strumień trwa.' : 'Strumień właśnie się zaczął!');
+                    showNotification(topic === '' ? 'Strumień trwa.' : 'Strumień właśnie się zaczął!', true);
                     playSound();
                 }
             } else {
@@ -69,7 +69,7 @@ function makeListeners() {
                     topic = topicReceived;
                 } else {
                     if (topic !== topicReceived) {
-                        showNotification('Nowy temat: ' + topicReceived);
+                        showNotification('Nowy temat: ' + topicReceived, false);
                         topic = topicReceived;
                     }
                 }
@@ -112,22 +112,27 @@ function startConnect() {
     }, 20000);
 }
 
-function showNotification(mainMessage) {
-    chrome.notifications.create('status',
+function showNotification(mainMessage, silent) {
+    chrome.storage.sync.get({removeNotification: true }, (options) => {
+        chrome.notifications.create('status',
         {
             type: 'basic',
             iconUrl: '/icons/128.png',
             title: 'Jadisco.pl',
-            requireInteraction: true,
+            requireInteraction: options.removeNotification,
             priority: 2,
-            silent: true,
+            silent: silent,
             message: mainMessage,
         },
         function(callback_id) {
-            setTimeout(function() {
-                chrome.notifications.clear(callback_id);
-            }, 15000);
+            if (options.removeNotification)
+			{
+                setTimeout(function() {
+                    chrome.notifications.clear(callback_id);
+                }, 15000);
+            }
         });
+    })
 }
 
 function updateBall(statusReceived) {
