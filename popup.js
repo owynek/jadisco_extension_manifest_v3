@@ -51,18 +51,22 @@ function assingDateToElement(dateOnly, element, fullDate) {
 }
 
 function assignDataFromMsg(lastMsg) {
-    const strimActive = lastMsg.data.services.some(service => service.status.status === 1);
+    const strimActive = lastMsg.data.services.find(service => service.status.status === 1);
     const soundAlreadyPlayed = statusEl.className === 'glow glow-green';
     if (strimActive) {
         statusEl.innerHTML = 'On air';
         statusEl.className = 'glow glow-green';
+        const statusDate = new Date(strimActive.status.online_at);
+        const statusDateOnly = new Date(statusDate.getFullYear(), statusDate.getMonth(), statusDate.getDate());
+        assingDateToElement(statusDateOnly, statusTimeEl, statusDate);
         if (!soundAlreadyPlayed) {
             playSound();
         }
     } else {
+        const stream = lastMsg.data.services.find(service => service.status.status === 0);
         statusEl.innerHTML = 'Offline';
         statusEl.className = 'glow glow-red';
-        const statusDate = new Date(lastMsg.data.host.created_at);
+        const statusDate = new Date(stream.status.offline_at);
         const statusDateOnly = new Date(statusDate.getFullYear(), statusDate.getMonth(), statusDate.getDate());
         assingDateToElement(statusDateOnly, statusTimeEl, statusDate);
     }
@@ -87,8 +91,6 @@ const setUp = () => {
         (items) => {
             mutedEl.checked = items.muted;
             volumeEl.value = items.volume;
-            const { lastMsg } = items;
-            assignDataFromMsg(lastMsg);
         },
     );
     chrome.storage.session.get(

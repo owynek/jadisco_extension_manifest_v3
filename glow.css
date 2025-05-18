@@ -7,7 +7,7 @@
 }
 
 .glow {
-    padding-left: 15px;
+    padding-left: 0.5rem;
     text-align: center;
     animation: glow 1s ease-in-out infinite alternate;
 }
