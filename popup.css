@@ -68,7 +68,7 @@ p {
     width: 100%;
 }
 
-.volume-wrapper {
+.wrapper {
     padding-top: 10px;
     padding-bottom: 10px;
 }
@@ -86,10 +86,18 @@ p {
     letter-spacing: 2px;
 }
 
-.go-to-button {
+.cursor-pointer {
     cursor: pointer;
 }
 
 .date {
     font-size: 12px;
+}
+
+.input-group{
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 10px;
 }
