@@ -1,5 +1,3 @@
-import { playSound } from './playSound.js';
-
 const mutedEl = document.getElementById('muted');
 const volumeEl = document.getElementById('volume');
 const removeNotificationEl = document.getElementById('removeNotification');
@@ -10,6 +8,7 @@ const topicEl = document.getElementById('topic');
 const topicTimeEl = document.getElementById('topicTime');
 const logoEl = document.getElementById('logo');
 const settingsButtonEl = document.getElementById('settingsButton');
+const settingsEl = document.getElementById('settings');
 
 const TODAY = new Date();
 const TODAY_ONLY = new Date(TODAY.getFullYear(), TODAY.getMonth(), TODAY.getDate());
@@ -54,11 +53,11 @@ function assingDateToElement(dateOnly, element, fullDate) {
 
 function assignDataFromMsg(lastMsg) {
     if (!lastMsg.data) {
-            statusEl.innerHTML = 'Error';
-            statusEl.className = 'glow glow-red';
-            return;
-        }
-    const strimActive = lastMsg.data.services.some(service => service.status.status === 1);
+        statusEl.innerHTML = 'Error';
+        statusEl.className = 'glow glow-red';
+        return;
+    }
+    const strimActive = lastMsg.data.services.find(service => service.status.status === 1);
     if (strimActive) {
         statusEl.innerHTML = 'On air';
         statusEl.className = 'glow glow-green';
@@ -110,13 +109,12 @@ function openJadisco() {
 }
 
 const toggleOptions = () => {
-    const settingsEl = document.getElementById('settings');
     if (settingsEl.hasAttribute('hidden')) {
         settingsEl.removeAttribute('hidden');
-        document.getElementById('settingsButton').innerText = '💀';
+        settingsButtonEl.innerText = '💀';
     } else {
         settingsEl.setAttribute('hidden', null);
-        document.getElementById('settingsButton').innerText = '📎';
+        settingsButtonEl.innerText = '📎';
     }
 };
 
