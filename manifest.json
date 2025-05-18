@@ -21,7 +21,8 @@
   "permissions": [
     "notifications",
     "offscreen",
-    "storage"
+    "storage",
+    "background"
   ],
   "version": "2.1.0",
   "content_security_policy": {
