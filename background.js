@@ -193,11 +193,13 @@ chrome.runtime.onMessage.addListener((message) => {
     if (message.type === 'closeOffscreen') {
         chrome.offscreen.closeDocument();
     }
-    if (message.type === 'playSound') {
-        playSound();
-    }
-    if (message.type === 'closeOffscreen') {
-        chrome.offscreen.closeDocument();
+    if (message.type === 'manualRefresh') {
+        log('info', '🔄 Manual refresh requested 🫡');
+        if (websocket && websocket.readyState === WebSocket.OPEN) {
+            websocket.send(JSON.stringify({ type: 'follow', site_id: SITE_ID }));
+        } else {
+            makeWebsocket();
+        }
     }
 });
 
@@ -214,7 +216,7 @@ chrome.alarms.onAlarm.addListener((alarm) => {
             websocket.send(JSON.stringify({ type: 'pong' }));
         }
         if (!websocket || websocket.readyState !== WebSocket.OPEN) {
-            log('info', '🔁 WebSocket reconnect after wake 💤');
+            log('info', '🔄 Reconnect after wake 💤');
             makeWebsocket();
         }
     }

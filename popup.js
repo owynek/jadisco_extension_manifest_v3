@@ -1,3 +1,5 @@
+import { createSound } from './playSound.js';
+
 const mutedEl = document.getElementById('muted');
 const volumeEl = document.getElementById('volume');
 const removeNotificationEl = document.getElementById('removeNotification');
@@ -11,6 +13,7 @@ const logoEl = document.getElementById('logo');
 const settingsButtonEl = document.getElementById('settingsButton');
 const settingsEl = document.getElementById('settings');
 const testSoundEl = document.getElementById('testSound');
+const manualRefreshEl = document.getElementById('manualRefresh');
 
 const TODAY = new Date();
 const TODAY_ONLY = new Date(TODAY.getFullYear(), TODAY.getMonth(), TODAY.getDate());
@@ -133,6 +136,13 @@ window.onblur = function() {
     saveEl.removeEventListener('click', saveOptions);
     logoEl.removeEventListener('click', openJadisco);
     settingsButtonEl.removeEventListener('click', toggleOptions);
+    reportEl.removeEventListener('click', openGitHub);
+    manualRefreshEl.removeEventListener('click', () => {
+        chrome.runtime.sendMessage({ type: 'manualRefresh' });
+    });
+    testSoundEl.removeEventListener('click', () => {
+        createSound(volumeEl.value);
+    });
 };
 
 document.addEventListener('DOMContentLoaded', setUp);
@@ -140,6 +150,9 @@ logoEl.addEventListener('click', openJadisco);
 reportEl.addEventListener('click', openGitHub);
 settingsButtonEl.addEventListener('click', toggleOptions);
 saveEl.addEventListener('click', saveOptions);
+manualRefreshEl.addEventListener('click', () => {
+    chrome.runtime.sendMessage({ type: 'manualRefresh' });
+});
 testSoundEl.addEventListener('click', () => {
-    chrome.runtime.sendMessage({ type: 'playSound' });
+    createSound(volumeEl.value);
 });

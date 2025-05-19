@@ -21,6 +21,23 @@ button {
     width: 100%;
     cursor: crosshair;
     vertical-align: middle;
+    border: none;
+    color: #E7E7E7;
+    background-color: #434343;
+    transition: all 0.1s ease-in-out;
+    transform: scale(1);
+}
+
+button:hover {
+    color: white;
+    background-color: #5a5a5a;
+    box-shadow: 0px 0px 10px 0px rgba(128, 255, 118, 0.4);
+}
+
+button:active {
+    transform: scale(0.97);
+    background-color: #3a3a3a;
+    box-shadow: 0px 0px 5px 0px rgba(128, 255, 118, 0.3);
 }
 
 p {
@@ -94,7 +111,7 @@ p {
     font-size: 12px;
 }
 
-.input-group{
+.input-group {
     display: flex;
     justify-content: flex-start;
     align-items: center;
@@ -102,8 +119,12 @@ p {
     padding: 5px 10px;
 }
 
-.action-buttons{
+.action-buttons {
     display: flex;
     flex-direction: column;
     gap: 8px;
+}
+
+.sound-button {
+    border-radius: 5px;
 }
