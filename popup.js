@@ -2,6 +2,7 @@ const mutedEl = document.getElementById('muted');
 const volumeEl = document.getElementById('volume');
 const removeNotificationEl = document.getElementById('removeNotification');
 const saveEl = document.getElementById('save');
+const reportEl = document.getElementById('report');
 const statusEl = document.getElementById('status');
 const statusTimeEl = document.getElementById('statusTime');
 const topicEl = document.getElementById('topic');
@@ -110,6 +111,10 @@ function openJadisco() {
     chrome.tabs.create({ url: 'https://jadisco.pl' });
 }
 
+function openGitHub() {
+    chrome.tabs.create({ url: 'https://github.com/owynek/jadisco_extension_manifest_v3/issues' });
+}
+
 function hideSettings() {
     settingsEl.setAttribute('hidden', null);
     settingsButtonEl.innerText = '⚙️';
@@ -132,6 +137,7 @@ window.onblur = function() {
 
 document.addEventListener('DOMContentLoaded', setUp);
 logoEl.addEventListener('click', openJadisco);
+reportEl.addEventListener('click', openGitHub);
 settingsButtonEl.addEventListener('click', toggleOptions);
 saveEl.addEventListener('click', saveOptions);
 testSoundEl.addEventListener('click', () => {
