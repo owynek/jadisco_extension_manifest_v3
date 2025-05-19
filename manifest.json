@@ -23,7 +23,8 @@
     "offscreen",
     "storage",
     "alarms",
-    "tabs"
+    "tabs",
+    "background"
   ],
   "version": "2.2.0",
   "content_security_policy": {

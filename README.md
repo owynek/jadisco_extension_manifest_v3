@@ -1,7 +1,8 @@
 # Powiadamiacz-Jadisco.pl – Rozszerzenie Chrome
 
 🔔 **Jadisco.pl** to rozszerzenie Chrome, które powiadamia Cię o rozpoczęciu transmisji lub zmianie tematu na stronie
-Jadisco. Zbudowane w oparciu o **Manifest V3**, wykorzystuje WebSockety, powiadomienia Chrome i dźwięk odtwarzany w tle. <br>
+Jadisco. Zbudowane w oparciu o **Manifest V3**, wykorzystuje WebSockety, powiadomienia Chrome i dźwięk odtwarzany w
+tle. <br>
 [Link do rozszerzenia](https://chromewebstore.google.com/detail/jadiscopl/onoloilfmbomfgdalcbbpnlnhibneofa)
 ---
 
@@ -19,17 +20,24 @@ Jadisco. Zbudowane w oparciu o **Manifest V3**, wykorzystuje WebSockety, powiado
 
 ## 📁 Struktura projektu
 
-├── *icons/* &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# Folder z ikonami <br>
-├── *images/* &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# Folder z obrazami <br>
-├── *sounds/* &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# Folder z dzwiękiem powiadamiacza <br>
+├── *icons/*
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# Folder z
+ikonami <br>
+├── *images/* &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# Folder z
+obrazami <br>
+├── *sounds/* &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# Folder z
+dzwiękiem powiadamiacza <br>
 ├── *background.js* &nbsp;&nbsp;&nbsp;&nbsp;# Logika połączenia WebSocket i powiadomień <br>
 ├── *playSound.js* &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# Obsługa odtwarzania dźwięku <br>
 ├── *audio.html* &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# Offscreen dokument do dźwięku <br>
-├── *audio.js* &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# Skrypt odtwarzający MP3 <br>
+├── *audio.js* &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# Skrypt odtwarzający
+MP3 <br>
 ├── *popup.html* &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# Widok popupu rozszerzenia <br>
-├── *popup.js* &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# Skrypt obsługujący interfejs <br>
+├── *popup.js* &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# Skrypt obsługujący
+interfejs <br>
 ├── *popup.css* &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# Styl popupu <br>
-├── *glow.css* &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# Stylizowane efekty glow <br>
+├── *glow.css* &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# Stylizowane efekty
+glow <br>
 ├── *background.css* &nbsp;&nbsp;# Efekt graficzny tła <br>
 ├── *animation.css* &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# Gradientowa animacja <br>
 ├── *manifest.json* &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# Plik konfiguracyjny rozszerzenia <br>
@@ -56,6 +64,7 @@ Jadisco. Zbudowane w oparciu o **Manifest V3**, wykorzystuje WebSockety, powiado
 "alarms",
 "offscreen",
 "tabs",
+"background",
 ],
 "host_permissions": [
 "https://jadisco.pl/*",
@@ -70,6 +79,7 @@ Jadisco. Zbudowane w oparciu o **Manifest V3**, wykorzystuje WebSockety, powiado
 | **alarms**        | cykliczne utrzymanie aktywności  |
 | **offscreen**     | odtwarzanie dźwięków             |
 | **tabs**          | otwieranie stron                 |
+| **background**    | działanie apliakcji w tle        |
 
 ---
 
