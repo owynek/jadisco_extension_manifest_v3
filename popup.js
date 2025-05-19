@@ -29,6 +29,7 @@ const saveOptions = () => {
         () => {
             saveEl.textContent = '🔥 Options saved 🔥';
             setTimeout(() => {
+                settingsEl.setAttribute('hidden', null);
                 saveEl.textContent = '💾 Save';
             }, 1000);
         },

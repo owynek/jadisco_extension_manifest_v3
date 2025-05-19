@@ -22,10 +22,10 @@
     "notifications",
     "offscreen",
     "storage",
-    "background"
+    "alarms"
   ],
-  "version": "2.1.0",
+  "version": "2.2.0",
   "content_security_policy": {
-    "extension_pages": "script-src 'self'; object-src 'self';"
+    "extension_pages": "default-src 'self'; script-src 'self'; object-src 'self'; media-src 'self';"
   }
 }
