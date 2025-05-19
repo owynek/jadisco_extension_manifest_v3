@@ -12,9 +12,6 @@ export function playSound() {
                     });
                 }
                 await chrome.runtime.sendMessage({ volume: items.volume });
-                setTimeout(() => {
-                    chrome.offscreen.closeDocument();
-                }, 1000);
             }
         },
     );

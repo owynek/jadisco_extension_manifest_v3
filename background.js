@@ -9,8 +9,8 @@ let topic = '';
 
 const WS_URL = 'wss://livegamers.pl/api/pubsub';
 const SITE_ID = 16;
-const BASE_RECONNECT_INTERVAL = 5000; // 5 seconds
-const MAX_RECONNECT_INTERVAL = 60000; // 1 minute
+const BASE_RECONNECT_INTERVAL = 5000;
+const MAX_RECONNECT_INTERVAL = 60000;
 
 function log(level, ...args) {
     const levels = {
@@ -27,7 +27,6 @@ function makeWebsocket() {
         log('info', 'WebSocket already open. 👌');
         return;
     }
-
     try {
         websocket = new WebSocket(WS_URL);
         makeListeners();
@@ -68,11 +67,10 @@ function makeListeners() {
         }
 
         const type = messageJson.type;
-
         if (type === 'ping') {
             log('info', '🏓 Ping received');
         } else if (type === 'status') {
-            chrome.storage.session.set({ lastMsg: messageJson });
+            chrome.storage.local.set({ lastMsg: messageJson });
             chrome.runtime.sendMessage({ type: 'statusUpdate', payload: messageJson }).catch((error) => {
                 log('warn', '🤖 No receiver for statusUpdate message:', error);
             });
@@ -165,27 +163,43 @@ function updateBall(status) {
 
 function showNotification(mainMessage, silent) {
     chrome.storage.sync.get({ removeNotification: true }, (options) => {
-        chrome.notifications.create(
-            'status',
-            {
-                type: 'basic',
-                iconUrl: '/icons/128.png',
-                title: 'Jadisco.pl',
-                requireInteraction: options.removeNotification,
-                priority: 2,
-                silent: silent,
-                message: mainMessage,
-            },
-            (callback_id) => {
-                if (options.removeNotification) {
-                    setTimeout(() => {
-                        chrome.notifications.clear(callback_id);
-                    }, 15000);
+        if (chrome.notifications && chrome.notifications.create) {
+            chrome.notifications.create(
+                'status',
+                {
+                    type: 'basic',
+                    iconUrl: '/icons/128.png',
+                    title: 'Jadisco.pl',
+                    requireInteraction: options.removeNotification,
+                    priority: 2,
+                    silent: silent,
+                    message: mainMessage,
+                },
+                (callback_id) => {
+                    if (options.removeNotification) {
+                        setTimeout(() => {
+                            chrome.notifications.clear(callback_id);
+                        }, 15000);
+                    }
                 }
-            }
-        );
+            );
+        } else {
+            log('warn', 'Notifications API not available');
+        }
     });
 }
+
+chrome.runtime.onMessage.addListener((message) => {
+    if (message.type === 'closeOffscreen') {
+        chrome.offscreen.closeDocument();
+    }
+    if (message.type === 'playSound') {
+        playSound();
+    }
+    if (message.type === 'closeOffscreen') {
+        chrome.offscreen.closeDocument();
+    }
+});
 
 chrome.notifications.onClicked.addListener(() => {
     chrome.tabs.create({ url: 'https://jadisco.pl' });
@@ -199,8 +213,12 @@ chrome.alarms.onAlarm.addListener((alarm) => {
         if (websocket && websocket.readyState === WebSocket.OPEN) {
             websocket.send(JSON.stringify({ type: 'pong' }));
         }
+        if (!websocket || websocket.readyState !== WebSocket.OPEN) {
+            log('info', '🔁 WebSocket reconnect after wake 💤');
+            makeWebsocket();
+        }
     }
 });
-log('info', '🟢 background.js loaded 🦾');
 
+log('info', '🟢 background.js loaded 🦾');
 makeWebsocket();

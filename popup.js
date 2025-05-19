@@ -9,6 +9,7 @@ const topicTimeEl = document.getElementById('topicTime');
 const logoEl = document.getElementById('logo');
 const settingsButtonEl = document.getElementById('settingsButton');
 const settingsEl = document.getElementById('settings');
+const testSoundEl = document.getElementById('testSound');
 
 const TODAY = new Date();
 const TODAY_ONLY = new Date(TODAY.getFullYear(), TODAY.getMonth(), TODAY.getDate());
@@ -29,8 +30,8 @@ const saveOptions = () => {
         () => {
             saveEl.textContent = '🔥 Options saved 🔥';
             setTimeout(() => {
-                settingsEl.setAttribute('hidden', null);
                 saveEl.textContent = '💾 Save';
+                hideSettings();
             }, 1000);
         },
     );
@@ -97,7 +98,7 @@ const setUp = () => {
             removeNotificationEl.checked = items.removeNotification;
         },
     );
-    chrome.storage.session.get(
+    chrome.storage.local.get(
         { lastMsg: {} },
         ({ lastMsg }) => {
             assignDataFromMsg(lastMsg);
@@ -109,13 +110,17 @@ function openJadisco() {
     chrome.tabs.create({ url: 'https://jadisco.pl' });
 }
 
+function hideSettings() {
+    settingsEl.setAttribute('hidden', null);
+    settingsButtonEl.innerText = '⚙️';
+}
+
 const toggleOptions = () => {
     if (settingsEl.hasAttribute('hidden')) {
         settingsEl.removeAttribute('hidden');
-        settingsButtonEl.innerText = '💀';
+        settingsButtonEl.innerText = '❌';
     } else {
-        settingsEl.setAttribute('hidden', null);
-        settingsButtonEl.innerText = '📎';
+        hideSettings();
     }
 };
 
@@ -129,3 +134,6 @@ document.addEventListener('DOMContentLoaded', setUp);
 logoEl.addEventListener('click', openJadisco);
 settingsButtonEl.addEventListener('click', toggleOptions);
 saveEl.addEventListener('click', saveOptions);
+testSoundEl.addEventListener('click', () => {
+    chrome.runtime.sendMessage({ type: 'playSound' });
+});
