@@ -22,7 +22,8 @@
     "notifications",
     "offscreen",
     "storage",
-    "alarms"
+    "alarms",
+    "tabs"
   ],
   "version": "2.2.0",
   "content_security_policy": {
