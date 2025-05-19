@@ -25,7 +25,7 @@ function closeWebsocket() {
 
 function makeListeners() {
     websocket.onopen = function() {
-        console.log('Connected!');
+        console.log('Connected!', new Date().toLocaleTimeString());
         updateBall(streamStatus);
 
         websocket.send('{"type":"follow","site_id":16}');
@@ -81,11 +81,9 @@ function makeListeners() {
     };
 
     websocket.onclose = function() {
-        console.log('Disconnected!');
+        console.log('Disconnected!', new Date().toLocaleTimeString());
         chrome.action.setIcon({ path: { '16': '/icons/16-disconnected.png', '32': '/icons/32-disconnected.png' } });
-
         stopHeartbeat();
-
         startConnect();
     };
 }
@@ -107,7 +105,7 @@ function startConnect() {
     makeWebsocket();
     clearInterval(connectInterval);
     connectInterval = setInterval(function() {
-        console.log('Attempt to connect');
+        console.log('Attempt to connect', new Date().toLocaleTimeString());
         makeWebsocket();
     }, 20000);
 }

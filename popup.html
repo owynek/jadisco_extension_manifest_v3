@@ -10,36 +10,40 @@
 </head>
 <body>
 <header class="header">
-    <img id="logo" src="logo.png" alt="jaDisco.pl">
+    <img id="logo" src="images/logo.png" alt="jaDisco.pl">
     <span id="settingsButton" class="settings">📎</span>
 </header>
-<div class="myGrad"></div>
+<div class="background"></div>
 <div class="info-wrapper">
     <div class="status-wrapper section">
         <div>
             <span>Status:</span>
             <span id="status"></span>
         </div>
-        <span id="statusTime"></span>
+        <span id="statusTime" class="date"></span>
     </div>
     <div class="topic section">
         <div class="topic-title">
             <span>Topic:</span>
-            <span id="topicTime"></span>
+            <span id="topicTime" class="date"></span>
         </div>
-        <p id="topic" class="topic-details"></p>
+        <p id="topic"></p>
     </div>
 
 </div>
 <div id="settings" class="settings-wrapper" hidden>
-    <div class="volume-wrapper">
-        <input type="checkbox" id="muted" />
-        <label for="muted">Mute</label><br>
-        <label for="volume">Volume</label>
-        <input type="range" id="volume" min="0" max="1" value="0.5" step="0.1" />
-        <div>
-            <input type="checkbox" id="removeNotification" />
-            <label for="removeNotification">Remove notifications automatically</label>
+    <div class="wrapper">
+        <div class="input-group">
+            <label for="volume">Volume</label>
+            <input type="range" id="volume" min="0" max="1" value="0.5" step="0.1" />
+        </div>
+        <div class="input-group">
+            <input class="cursor-pointer" type="checkbox" id="muted" />
+            <label class="cursor-pointer" for="muted">Mute</label>
+        </div>
+        <div class="input-group">
+            <input class="cursor-pointer" type="checkbox" id="removeNotification" />
+            <label class="cursor-pointer" for="removeNotification">Auto-remove notifications</label>
         </div>
     </div>
     <button id="save" class="save-button">💾 Save</button>
