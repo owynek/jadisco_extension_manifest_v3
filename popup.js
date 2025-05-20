@@ -1,7 +1,10 @@
+import { createSound } from './playSound.js';
+
 const mutedEl = document.getElementById('muted');
 const volumeEl = document.getElementById('volume');
 const removeNotificationEl = document.getElementById('removeNotification');
 const saveEl = document.getElementById('save');
+const reportEl = document.getElementById('report');
 const statusEl = document.getElementById('status');
 const statusTimeEl = document.getElementById('statusTime');
 const topicEl = document.getElementById('topic');
@@ -9,6 +12,8 @@ const topicTimeEl = document.getElementById('topicTime');
 const logoEl = document.getElementById('logo');
 const settingsButtonEl = document.getElementById('settingsButton');
 const settingsEl = document.getElementById('settings');
+const testSoundEl = document.getElementById('testSound');
+const manualRefreshEl = document.getElementById('manualRefresh');
 
 const TODAY = new Date();
 const TODAY_ONLY = new Date(TODAY.getFullYear(), TODAY.getMonth(), TODAY.getDate());
@@ -30,6 +35,7 @@ const saveOptions = () => {
             saveEl.textContent = '🔥 Options saved 🔥';
             setTimeout(() => {
                 saveEl.textContent = '💾 Save';
+                hideSettings();
             }, 1000);
         },
     );
@@ -96,7 +102,7 @@ const setUp = () => {
             removeNotificationEl.checked = items.removeNotification;
         },
     );
-    chrome.storage.session.get(
+    chrome.storage.local.get(
         { lastMsg: {} },
         ({ lastMsg }) => {
             assignDataFromMsg(lastMsg);
@@ -108,13 +114,21 @@ function openJadisco() {
     chrome.tabs.create({ url: 'https://jadisco.pl' });
 }
 
+function openGitHub() {
+    chrome.tabs.create({ url: 'https://github.com/owynek/jadisco_extension_manifest_v3/issues' });
+}
+
+function hideSettings() {
+    settingsEl.setAttribute('hidden', null);
+    settingsButtonEl.innerText = '⚙️';
+}
+
 const toggleOptions = () => {
     if (settingsEl.hasAttribute('hidden')) {
         settingsEl.removeAttribute('hidden');
-        settingsButtonEl.innerText = '💀';
+        settingsButtonEl.innerText = '❌';
     } else {
-        settingsEl.setAttribute('hidden', null);
-        settingsButtonEl.innerText = '📎';
+        hideSettings();
     }
 };
 
@@ -122,9 +136,23 @@ window.onblur = function() {
     saveEl.removeEventListener('click', saveOptions);
     logoEl.removeEventListener('click', openJadisco);
     settingsButtonEl.removeEventListener('click', toggleOptions);
+    reportEl.removeEventListener('click', openGitHub);
+    manualRefreshEl.removeEventListener('click', () => {
+        chrome.runtime.sendMessage({ type: 'manualRefresh' });
+    });
+    testSoundEl.removeEventListener('click', () => {
+        createSound(volumeEl.value);
+    });
 };
 
 document.addEventListener('DOMContentLoaded', setUp);
 logoEl.addEventListener('click', openJadisco);
+reportEl.addEventListener('click', openGitHub);
 settingsButtonEl.addEventListener('click', toggleOptions);
 saveEl.addEventListener('click', saveOptions);
+manualRefreshEl.addEventListener('click', () => {
+    chrome.runtime.sendMessage({ type: 'manualRefresh' });
+});
+testSoundEl.addEventListener('click', () => {
+    createSound(volumeEl.value);
+});

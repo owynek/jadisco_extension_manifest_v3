@@ -1,148 +1,226 @@
 import { playSound } from './playSound.js';
 
-let websocket;
-let websocketHeartbeatInterval;
-let connectInterval;
+let websocket = null;
+let websocketHeartbeatInterval = null;
+let reconnectTimeout = null;
+let reconnectAttempts = 0;
 let streamStatus = false;
 let topic = '';
 
+const WS_URL = 'wss://livegamers.pl/api/pubsub';
+const SITE_ID = 16;
+const BASE_RECONNECT_INTERVAL = 5000;
+const MAX_RECONNECT_INTERVAL = 60000;
+
+function log(level, ...args) {
+    const levels = {
+        info: 'ℹ️',
+        warn: '⚠️',
+        error: '❌',
+    };
+    const prefix = `[${new Date().toLocaleTimeString()}] ${levels[level] || ''}`;
+    console[level](`${prefix}`, ...args);
+}
+
 function makeWebsocket() {
-    if (websocket) {
-        console.log('Websocket ready existing');
+    if (websocket && websocket.readyState === WebSocket.OPEN) {
+        log('info', 'WebSocket already open. 👌');
         return;
     }
     try {
-        websocket = new WebSocket('wss://livegamers.pl/api/pubsub');
+        websocket = new WebSocket(WS_URL);
         makeListeners();
     } catch (err) {
-        console.log('Error when creating websocket ' + err);
+        log('error', 'WebSocket creation failed:', err);
+        scheduleReconnect();
     }
 }
 
-function closeWebsocket() {
-    websocket.close();
+function cleanupWebsocket() {
+    if (websocket) {
+        websocket.onopen = null;
+        websocket.onmessage = null;
+        websocket.onclose = null;
+        websocket.onerror = null;
+        websocket.close();
+        websocket = null;
+    }
+    stopHeartbeat();
 }
 
 function makeListeners() {
-    websocket.onopen = function() {
-        console.log('Connected!', new Date().toLocaleTimeString());
+    websocket.onopen = () => {
+        log('info', 'Connected to server 🌞');
         updateBall(streamStatus);
-
-        websocket.send('{"type":"follow","site_id":16}');
-
+        websocket.send(JSON.stringify({ type: 'follow', site_id: SITE_ID }));
         startHeartbeat();
-
-        clearInterval(connectInterval);
+        reconnectAttempts = 0;
     };
 
-    websocket.onmessage = function(event) {
-        let messageJson = JSON.parse(event.data);
-        let type = messageJson.type;
+    websocket.onmessage = (event) => {
+        let messageJson;
+        try {
+            messageJson = JSON.parse(event.data);
+        } catch (e) {
+            log('warn', '🤖 Invalid JSON received:', event.data);
+            return;
+        }
+
+        const type = messageJson.type;
         if (type === 'ping') {
-            console.log('🏓');
+            log('info', '🏓 Ping received');
         } else if (type === 'status') {
-            chrome.storage.session.set({ lastMsg: messageJson });
+            chrome.storage.local.set({ lastMsg: messageJson });
             chrome.runtime.sendMessage({ type: 'statusUpdate', payload: messageJson }).catch((error) => {
-                console.warn('No receiver for statusUpdate message', error);
+                log('warn', '🤖 No receiver for statusUpdate message:', error);
             });
+
             let statusReceived = 0;
             for (const element of messageJson.data.services) {
-                if (element.status.status === 1)
+                if (element.status.status === 1) {
                     statusReceived = 1;
+                    break;
+                }
             }
 
             updateBall(statusReceived);
 
-            if (statusReceived === 1) {
-                if (!streamStatus) {
-                    streamStatus = true;
-                    showNotification(topic === '' ? 'Strumień trwa.' : 'Strumień właśnie się zaczął!', true);
-                    playSound();
-                }
-            } else {
+            if (statusReceived === 1 && !streamStatus) {
+                streamStatus = true;
+                showNotification(topic === '' ? 'Strumień trwa.' : 'Strumień właśnie się zaczął!', true);
+                playSound();
+            } else if (statusReceived === 0) {
                 streamStatus = false;
             }
 
             try {
-                let topicReceived = messageJson.data.topic.text;
-                if (topic === '') {
-                    topic = topicReceived;
-                } else {
-                    if (topic !== topicReceived) {
+                const topicReceived = messageJson.data.topic.text;
+                if (topic !== topicReceived) {
+                    if (topic !== '') {
                         showNotification('Nowy temat: ' + topicReceived, false);
-                        topic = topicReceived;
                     }
+                    topic = topicReceived;
                 }
             } catch (e) {
-                console.log(e.message);
-                console.log(messageJson);
+                log('warn', '🤖 Topic parse error:', e.message);
             }
         }
     };
 
-    websocket.onclose = function() {
-        console.log('Disconnected!', new Date().toLocaleTimeString());
-        chrome.action.setIcon({ path: { '16': '/icons/16-disconnected.png', '32': '/icons/32-disconnected.png' } });
-        stopHeartbeat();
-        startConnect();
+    websocket.onclose = () => {
+        log('warn', 'Disconnected from server ⛈️');
+        cleanupWebsocket();
+        updateBall('disconnected');
+        scheduleReconnect();
+    };
+
+    websocket.onerror = (e) => {
+        log('error', 'WebSocket error:', e);
     };
 }
 
 function startHeartbeat() {
     stopHeartbeat();
-    websocketHeartbeatInterval = setInterval(function() {
-        if (websocket.readyState === websocket.OPEN) {
-            websocket.send('{"type": "pong"}');
+    websocketHeartbeatInterval = setInterval(() => {
+        if (websocket && websocket.readyState === WebSocket.OPEN) {
+            websocket.send(JSON.stringify({ type: 'pong' }));
         }
     }, 20000);
 }
 
 function stopHeartbeat() {
     clearInterval(websocketHeartbeatInterval);
+    websocketHeartbeatInterval = null;
 }
 
-function startConnect() {
-    makeWebsocket();
-    clearInterval(connectInterval);
-    connectInterval = setInterval(function() {
-        console.log('Attempt to connect', new Date().toLocaleTimeString());
+function scheduleReconnect() {
+    if (reconnectTimeout) return;
+
+    const delay = Math.min(BASE_RECONNECT_INTERVAL * 2 ** reconnectAttempts, MAX_RECONNECT_INTERVAL);
+    reconnectAttempts++;
+    log('info', `🔌 Reconnecting in ${Math.round(delay / 1000)}s...`);
+
+    reconnectTimeout = setTimeout(() => {
+        reconnectTimeout = null;
         makeWebsocket();
-    }, 20000);
+    }, delay);
+}
+
+function updateBall(status) {
+    const iconBase = {
+        '1': 'online',
+        'disconnected': 'disconnected',
+        '0': '',
+    };
+    const suffix = iconBase[status] || '';
+    chrome.action.setIcon({
+        path: {
+            '16': `/icons/16${suffix ? '-' + suffix : ''}.png`,
+            '32': `/icons/32${suffix ? '-' + suffix : ''}.png`,
+        },
+    });
 }
 
 function showNotification(mainMessage, silent) {
-    chrome.storage.sync.get({removeNotification: true }, (options) => {
-        chrome.notifications.create('status',
-        {
-            type: 'basic',
-            iconUrl: '/icons/128.png',
-            title: 'Jadisco.pl',
-            requireInteraction: options.removeNotification,
-            priority: 2,
-            silent: silent,
-            message: mainMessage,
-        },
-        function(callback_id) {
-            if (options.removeNotification)
-			{
-                setTimeout(function() {
-                    chrome.notifications.clear(callback_id);
-                }, 15000);
-            }
-        });
-    })
+    chrome.storage.sync.get({ removeNotification: true }, (options) => {
+        if (chrome.notifications && chrome.notifications.create) {
+            chrome.notifications.create(
+                'status',
+                {
+                    type: 'basic',
+                    iconUrl: '/icons/128.png',
+                    title: 'Jadisco.pl',
+                    requireInteraction: options.removeNotification,
+                    priority: 2,
+                    silent: silent,
+                    message: mainMessage,
+                },
+                (callback_id) => {
+                    if (options.removeNotification) {
+                        setTimeout(() => {
+                            chrome.notifications.clear(callback_id);
+                        }, 15000);
+                    }
+                }
+            );
+        } else {
+            log('warn', 'Notifications API not available');
+        }
+    });
 }
 
-function updateBall(statusReceived) {
-    if (statusReceived === 1) {
-        chrome.action.setIcon({ path: { '16': '/icons/16-online.png', '32': '/icons/32-online.png' } });
-    } else {
-        chrome.action.setIcon({ path: { '16': '/icons/16.png', '32': '/icons/32.png' } });
+chrome.runtime.onMessage.addListener((message) => {
+    if (message.type === 'closeOffscreen') {
+        chrome.offscreen.closeDocument();
     }
-}
+    if (message.type === 'manualRefresh') {
+        log('info', '🔄 Manual refresh requested 🫡');
+        if (websocket && websocket.readyState === WebSocket.OPEN) {
+            websocket.send(JSON.stringify({ type: 'follow', site_id: SITE_ID }));
+        } else {
+            makeWebsocket();
+        }
+    }
+});
 
-chrome.notifications.onClicked.addListener(function() {
+chrome.notifications.onClicked.addListener(() => {
     chrome.tabs.create({ url: 'https://jadisco.pl' });
 });
 
-startConnect();
+chrome.alarms.create('keepAlive', { periodInMinutes: 1 });
+
+chrome.alarms.onAlarm.addListener((alarm) => {
+    if (alarm.name === 'keepAlive') {
+        log('info', '🔁 Keep-alive ping 🏓');
+        if (websocket && websocket.readyState === WebSocket.OPEN) {
+            websocket.send(JSON.stringify({ type: 'pong' }));
+        }
+        if (!websocket || websocket.readyState !== WebSocket.OPEN) {
+            log('info', '🔄 Reconnect after wake 💤');
+            makeWebsocket();
+        }
+    }
+});
+
+log('info', '🟢 background.js loaded 🦾');
+makeWebsocket();
