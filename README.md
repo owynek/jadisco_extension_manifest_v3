@@ -1,5 +1,5 @@
 # Powiadamiacz-Jadisco.pl – Rozszerzenie Chrome
-
+<br>
 🔔 **Jadisco.pl** to rozszerzenie Chrome, które powiadamia Cię o rozpoczęciu transmisji lub zmianie tematu na stronie
 Jadisco. Zbudowane w oparciu o **Manifest V3**, wykorzystuje WebSockety, powiadomienia Chrome i dźwięk odtwarzany w
 tle. <br>
@@ -13,7 +13,7 @@ tle. <br>
 - 🔊 Dźwięk przy rozpoczęciu transmisji
 - 💤 Automatyczne ponowne połączenie po wybudzeniu komputera
 - 🔁 Ręczne odświeżenie połączenia
-- 💾 Zapisywanie ustawień użytkownika
+- 💾 Auto zapisywanie ustawień użytkownika
 - 📄 Interfejs popup z informacją o statusie i temacie transmisji
 
 ---
