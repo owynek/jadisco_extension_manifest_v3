@@ -23,10 +23,9 @@
     "offscreen",
     "storage",
     "alarms",
-    "tabs",
     "background"
   ],
-  "version": "2.2.0",
+  "version": "2.2.2",
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'; media-src 'self';"
   }
