@@ -100,15 +100,18 @@ p {
 
 .header {
     display: flex;
-    justify-content: flex-end;
+    justify-content: space-between;
     align-items: flex-start
 }
 
 .settings {
-    margin-left: 10px;
     font-size: 16px;
     cursor: crosshair;
     letter-spacing: 2px;
+}
+
+.filler {
+    width: 20px;
 }
 
 .cursor-pointer {

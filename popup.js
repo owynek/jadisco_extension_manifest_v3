@@ -3,7 +3,6 @@ import { createSound } from './playSound.js';
 const mutedEl = document.getElementById('muted');
 const volumeEl = document.getElementById('volume');
 const removeNotificationEl = document.getElementById('removeNotification');
-const saveEl = document.getElementById('save');
 const reportEl = document.getElementById('report');
 const statusEl = document.getElementById('status');
 const statusTimeEl = document.getElementById('statusTime');
@@ -30,14 +29,7 @@ const saveOptions = () => {
     const REMOVE_NOTIFICATION = removeNotificationEl.checked;
 
     chrome.storage.sync.set(
-        { muted: MUTED, volume: VOLUME, removeNotification: REMOVE_NOTIFICATION },
-        () => {
-            saveEl.textContent = '🔥 Options saved 🔥';
-            setTimeout(() => {
-                saveEl.textContent = '💾 Save';
-                hideSettings();
-            }, 1000);
-        },
+        { muted: MUTED, volume: VOLUME, removeNotification: REMOVE_NOTIFICATION }
     );
 };
 
@@ -123,6 +115,15 @@ function hideSettings() {
     settingsButtonEl.innerText = '⚙️';
 }
 
+const refresh = () => {
+    chrome.runtime.sendMessage({ type: 'manualRefresh' });
+    manualRefreshEl.innerText = '✔️ Done';
+    setTimeout(() => {
+        manualRefreshEl.innerText = '🔄 Manual refresh';
+        hideSettings();
+    }, 600);
+}
+
 const toggleOptions = () => {
     if (settingsEl.hasAttribute('hidden')) {
         settingsEl.removeAttribute('hidden');
@@ -133,13 +134,13 @@ const toggleOptions = () => {
 };
 
 window.onblur = function() {
-    saveEl.removeEventListener('click', saveOptions);
     logoEl.removeEventListener('click', openJadisco);
     settingsButtonEl.removeEventListener('click', toggleOptions);
     reportEl.removeEventListener('click', openGitHub);
-    manualRefreshEl.removeEventListener('click', () => {
-        chrome.runtime.sendMessage({ type: 'manualRefresh' });
-    });
+    mutedEl.removeEventListener('change', saveOptions);
+    volumeEl.removeEventListener('change', saveOptions);
+    removeNotificationEl.removeEventListener('change', saveOptions);
+    manualRefreshEl.removeEventListener('click', refresh);
     testSoundEl.removeEventListener('click', () => {
         createSound(volumeEl.value);
     });
@@ -149,10 +150,10 @@ document.addEventListener('DOMContentLoaded', setUp);
 logoEl.addEventListener('click', openJadisco);
 reportEl.addEventListener('click', openGitHub);
 settingsButtonEl.addEventListener('click', toggleOptions);
-saveEl.addEventListener('click', saveOptions);
-manualRefreshEl.addEventListener('click', () => {
-    chrome.runtime.sendMessage({ type: 'manualRefresh' });
-});
+mutedEl.addEventListener('change', saveOptions);
+volumeEl.addEventListener('change', saveOptions);
+removeNotificationEl.addEventListener('change', saveOptions);
+manualRefreshEl.addEventListener('click', refresh);
 testSoundEl.addEventListener('click', () => {
     createSound(volumeEl.value);
 });

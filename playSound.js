@@ -1,3 +1,6 @@
+let isPlaying = false;
+let fallbackTimeout = null;
+
 export async function createSound(volume) {
     const hasDoc = await chrome.offscreen.hasDocument();
     if (!hasDoc) {
@@ -11,12 +14,34 @@ export async function createSound(volume) {
 }
 
 export function playSound() {
+    if (isPlaying) return;
+    isPlaying = true;
+
     chrome.storage.sync.get(
         { muted: false, volume: 0.5 },
         async (items) => {
             if (!items.muted) {
-                await createSound(items.volume);
+                try {
+                    await createSound(items.volume);
+
+                    fallbackTimeout = setTimeout(() => {
+                        unlockSound();
+                    }, 3000);
+                } catch (e) {
+                    console.error('🔴 Error in playSound:', e);
+                    unlockSound();
+                }
+            } else {
+                unlockSound();
             }
         },
     );
+}
+
+export function unlockSound() {
+    if (fallbackTimeout) {
+        clearTimeout(fallbackTimeout);
+        fallbackTimeout = null;
+    }
+    isPlaying = false;
 }

@@ -1,4 +1,4 @@
-import { playSound } from './playSound.js';
+import { playSound, unlockSound } from './playSound.js';
 
 let websocket = null;
 let websocketHeartbeatInterval = null;
@@ -181,7 +181,7 @@ function showNotification(mainMessage, silent) {
                             chrome.notifications.clear(callback_id);
                         }, 15000);
                     }
-                }
+                },
             );
         } else {
             log('warn', 'Notifications API not available');
@@ -189,9 +189,18 @@ function showNotification(mainMessage, silent) {
     });
 }
 
-chrome.runtime.onMessage.addListener((message) => {
+chrome.runtime.onMessage.addListener(async (message) => {
     if (message.type === 'closeOffscreen') {
-        chrome.offscreen.closeDocument();
+        try {
+            const hasDoc = await chrome.offscreen.hasDocument();
+            if (hasDoc) {
+                await chrome.offscreen.closeDocument();
+            }
+        } catch (e) {
+            console.warn('🔴 Error closing offscreen document:', e);
+        } finally {
+            unlockSound();
+        }
     }
     if (message.type === 'manualRefresh') {
         log('info', '🔄 Manual refresh requested 🫡');
