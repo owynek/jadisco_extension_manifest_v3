@@ -11,6 +11,11 @@ const WS_URL = 'wss://livegamers.pl/api/pubsub';
 const SITE_ID = 16;
 const BASE_RECONNECT_INTERVAL = 5000;
 const MAX_RECONNECT_INTERVAL = 60000;
+const JADISCO_URL = 'https://jadisco.pl/';
+const JADISCO_URL_PATTERNS = ['*://jadisco.pl/*', '*://www.jadisco.pl/*'];
+
+const SYNC_DEFAULTS = { autoOpenChat: false, removeNotification: true };
+let syncSettings = { ...SYNC_DEFAULTS };
 
 function log(level, ...args) {
     const levels = {
@@ -89,6 +94,7 @@ function makeListeners() {
                 streamStatus = true;
                 showNotification(topic === '' ? 'Strumień trwa.' : 'Strumień właśnie się zaczął!', true);
                 playSound();
+                openChatSidePanelIfEnabled();
             } else if (statusReceived === 0) {
                 streamStatus = false;
             }
@@ -161,32 +167,57 @@ function updateBall(status) {
     });
 }
 
-function showNotification(mainMessage, silent) {
-    chrome.storage.sync.get({ removeNotification: true }, (options) => {
-        if (chrome.notifications && chrome.notifications.create) {
-            chrome.notifications.create(
-                'status',
-                {
-                    type: 'basic',
-                    iconUrl: '/icons/128.png',
-                    title: 'Jadisco.pl',
-                    requireInteraction: options.removeNotification,
-                    priority: 2,
-                    silent: silent,
-                    message: mainMessage,
-                },
-                (callback_id) => {
-                    if (options.removeNotification) {
-                        setTimeout(() => {
-                            chrome.notifications.clear(callback_id);
-                        }, 15000);
-                    }
-                },
-            );
-        } else {
-            log('warn', 'Notifications API not available');
+function openChatSidePanelIfEnabled() {
+    chrome.storage.sync.get({ autoOpenChat: false }, ({ autoOpenChat }) => {
+        if (!autoOpenChat) {
+            return;
         }
+
+        chrome.windows.getLastFocused({}, (currentWindow) => {
+            if (chrome.runtime.lastError) {
+                log('warn', 'Cannot get focused window for side panel:', chrome.runtime.lastError.message);
+                return;
+            }
+
+            if (!currentWindow || !currentWindow.id || currentWindow.type !== 'normal') {
+                log('warn', 'No normal focused window to open side panel.');
+                return;
+            }
+
+            chrome.sidePanel.open({ windowId: currentWindow.id }, () => {
+                if (chrome.runtime.lastError) {
+                    log('warn', 'Cannot open side panel automatically:', chrome.runtime.lastError.message);
+                    return;
+                }
+                log('info', 'Side panel opened automatically after stream start.');
+            });
+        });
     });
+}
+
+function showNotification(mainMessage, silent) {
+  if (!chrome.notifications?.create) {
+    log('warn', 'Notifications API not available');
+    return;
+  }
+
+  chrome.notifications.create(
+    'status',
+    {
+      type: 'basic',
+      iconUrl: '/icons/128.png',
+      title: 'Jadisco.pl',
+      requireInteraction: !!syncSettings.removeNotification,
+      priority: 2,
+      silent: !!silent,
+      message: mainMessage,
+    },
+    (id) => {
+      if (syncSettings.removeNotification) {
+        setTimeout(() => chrome.notifications.clear(id), 15_000);
+      }
+    },
+  );
 }
 
 chrome.runtime.onMessage.addListener(async (message) => {
@@ -212,9 +243,57 @@ chrome.runtime.onMessage.addListener(async (message) => {
     }
 });
 
+function openChatSidePanelFromNotificationClick() {
+    chrome.windows.getLastFocused({}, (currentWindow) => {
+        if (!currentWindow || !currentWindow.id || currentWindow.type !== 'normal') {
+            openOrFocusJadiscoTab();
+            return;
+        }
+
+        chrome.sidePanel.open({ windowId: currentWindow.id }, () => {
+            if (chrome.runtime.lastError) {
+                log('warn', 'Cannot open side panel after notification click:', chrome.runtime.lastError.message);
+                openOrFocusJadiscoTab();
+            }
+        });
+    });
+}
+
+function openOrFocusJadiscoTab() {
+            log('info', 'openOrFocusJadiscoTab');
+    chrome.tabs.query({ url: JADISCO_URL_PATTERNS }, (tabs) => {
+        if (chrome.runtime.lastError) {
+            log('warn', 'Cannot query Jadisco tabs:', chrome.runtime.lastError.message);
+            chrome.tabs.create({ url: JADISCO_URL });
+            return;
+        }
+
+        if (!tabs || tabs.length === 0) {
+            chrome.tabs.create({ url: JADISCO_URL });
+            return;
+        }
+
+        const tabToFocus = tabs[0];
+        chrome.tabs.update(tabToFocus.id, { active: true }, () => {
+            if (chrome.runtime.lastError) {
+                log('warn', 'Cannot focus Jadisco tab:', chrome.runtime.lastError.message);
+                return;
+            }
+            chrome.windows.update(tabToFocus.windowId, { focused: true });
+        });
+    });
+}
+
 chrome.notifications.onClicked.addListener(() => {
-    chrome.tabs.create({ url: 'https://jadisco.pl' });
+    console.log(syncSettings.autoOpenChat);
+    
+     if (syncSettings.autoOpenChat) {
+    openChatSidePanelFromNotificationClick(); 
+     }
+    openOrFocusJadiscoTab();
 });
+
+
 
 chrome.alarms.create('keepAlive', { periodInMinutes: 1 });
 
@@ -229,6 +308,16 @@ chrome.alarms.onAlarm.addListener((alarm) => {
             makeWebsocket();
         }
     }
+});
+
+chrome.storage.sync.get(SYNC_DEFAULTS, (opts) => {
+  syncSettings = { ...SYNC_DEFAULTS, ...opts };
+});
+
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area !== 'sync') return;
+  if (changes.autoOpenChat) syncSettings.autoOpenChat = !!changes.autoOpenChat.newValue;
+  if (changes.removeNotification) syncSettings.removeNotification = !!changes.removeNotification.newValue;
 });
 
 log('info', '🟢 background.js loaded 🦾');
