@@ -3,12 +3,19 @@ html {
     --c: #1A1A1A;
     --_s: calc(2 * var(--s)) calc(2 * var(--s));
     --_g: 35.36% 35.36% at;
-    --_c: #0000 66%, rgba(24, 163, 78, 0.1) 68% 70%, #0000 72%;
-    background: radial-gradient(var(--_g) 100% 25%, var(--_c)) var(--s) var(--s)/var(--_s),
-    radial-gradient(var(--_g) 0 75%, var(--_c)) var(--s) var(--s)/var(--_s),
-    radial-gradient(var(--_g) 100% 25%, var(--_c)) 0 0/var(--_s),
-    radial-gradient(var(--_g) 0 75%, var(--_c)) 0 0/var(--_s),
+    --_c1: #0000 66%, rgba(255, 146, 86, 0.1) 68% 70%, #0000 20%;
+    --_c2: #0000 66%, rgba(89, 229, 205, 0.1) 68% 70%, #0000 20%;
+    --_c3: #0000 66%, rgba(119, 149, 255, 0.1) 68% 70%, #0000 20%;
+    background:
+    radial-gradient(var(--_g) 100% 25%, var(--_c1)) var(--s) var(--s)/var(--_s),
+    radial-gradient(var(--_g) 0 75%, var(--_c2)) var(--s) var(--s)/var(--_s),
+    radial-gradient(var(--_g) 100% 25%, var(--_c3)) 0 0/var(--_s),
+    radial-gradient(var(--_g) 0 75%, var(--_c2)) 0 0/var(--_s),
     repeating-conic-gradient(var(--c) 0 25%, #0000 0 50%) 0 0/var(--_s),
-    radial-gradient(var(--_c)) 0 calc(var(--s) / 2)/var(--s) var(--s) var(--c);
+    radial-gradient(circle at 15% 35%, rgba(255, 119, 119, 0.1), transparent 20%),
+    radial-gradient(circle at 82% 70%, rgba(90, 221, 204, 0.1), transparent 20%),
+    radial-gradient(circle at 52% 10%, rgba(132, 155, 255, 0.1), transparent 20%),
+    radial-gradient(#0000 66%, rgba(255, 207, 91, 0.1) 68% 70%, #0000 72%) 0 calc(var(--s) / 2)/var(--s) var(--s),
+    var(--c);
     background-attachment: fixed;
 }
