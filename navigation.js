@@ -78,13 +78,16 @@ function openSidePanel(windowId) {
     });
 }
 
-export async function openOrFocusJadiscoTab(log) {
+export async function openOrFocusJadiscoTab(log, preferredWindowId = null) {
     try {
         const tabs = await queryTabs({ url: JADISCO_URL_PATTERNS });
-        const tabToFocus = tabs[0];
+        const tabToFocus =
+            tabs.find((tab) => preferredWindowId && tab.windowId === preferredWindowId) ??
+            tabs[0];
 
         if (!tabToFocus || tabToFocus.id === undefined) {
-            await createTab({ url: JADISCO_URL });
+            const createProperties = preferredWindowId ? { url: JADISCO_URL, windowId: preferredWindowId } : { url: JADISCO_URL };
+            await createTab(createProperties);
             return;
         }
 
@@ -94,8 +97,9 @@ export async function openOrFocusJadiscoTab(log) {
             await updateWindow(tabToFocus.windowId, { focused: true });
         }
     } catch (error) {
-        log('warn', 'Cannot focus Jadisco tab. Opening a new tab instead.', error.message);
-        await createTab({ url: JADISCO_URL });
+        log('warn', 'Cannot focus Jadisco tab, opening a new one instead.', error.message);
+        const createProperties = preferredWindowId ? { url: JADISCO_URL, windowId: preferredWindowId } : { url: JADISCO_URL };
+        await createTab(createProperties);
     }
 }
 
@@ -110,7 +114,7 @@ export async function openSidePanelInLastFocusedWindow(log) {
         await openSidePanel(currentWindow.id);
         return true;
     } catch (error) {
-        log('warn', 'Cannot open side panel.', error.message);
+        log('warn', 'Cannot open side panel automatically:', error.message);
         return false;
     }
 }
@@ -123,13 +127,45 @@ export async function openChatSidePanelIfEnabled(syncSettings, log) {
     return openSidePanelInLastFocusedWindow(log);
 }
 
-export async function handleNotificationClick(syncSettings, log) {
-    if (syncSettings.openChatOnNotificationClick) {
-        const sidePanelOpened = await openSidePanelInLastFocusedWindow(log);
-        if (sidePanelOpened) {
+function openSidePanelForNotification(windowId, log, onSuccess, onError) {
+    chrome.sidePanel.open({ windowId }, () => {
+        if (chrome.runtime.lastError) {
+            log('warn', 'Cannot open side panel after notification click:', chrome.runtime.lastError.message);
+            onError();
             return;
         }
+
+        onSuccess();
+    });
+}
+
+export function handleNotificationClick(syncSettings, preferredWindowId, log) {
+    const openChatOnNotificationClick = Boolean(syncSettings?.openChatOnNotificationClick);
+    const openPageOnNotificationClick = Boolean(syncSettings?.openPageOnNotificationClick);
+
+    const openPage = () => {
+        void openOrFocusJadiscoTab(log, preferredWindowId);
+    };
+
+    if (openChatOnNotificationClick && preferredWindowId) {
+        openSidePanelForNotification(
+            preferredWindowId,
+            log,
+            () => {
+                if (openPageOnNotificationClick) {
+                    openPage();
+                }
+            },
+            () => {
+                if (openPageOnNotificationClick) {
+                    openPage();
+                }
+            },
+        );
+        return;
     }
 
-    await openOrFocusJadiscoTab(log);
+    if (openPageOnNotificationClick) {
+        openPage();
+    }
 }

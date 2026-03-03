@@ -8,6 +8,28 @@ function createNotification(notificationId, options) {
     });
 }
 
+export async function showTestNotification(log) {
+    if (!chrome.notifications?.create) {
+        log('warn', 'Notifications API not available.');
+        return null;
+    }
+
+    const notificationId = `test-${Date.now()}`;
+
+    await createNotification(notificationId, {
+        type: 'basic',
+        iconUrl: '/icons/128.png',
+        title: 'Jadisco.pl',
+        message: 'Test notification. Click to verify side panel opening.',
+        contextMessage: 'Manual check',
+        requireInteraction: true,
+        priority: 2,
+        silent: false,
+    });
+
+    return notificationId;
+}
+
 export async function showNotification(event, syncSettings, log) {
     if (!chrome.notifications?.create) {
         log('warn', 'Notifications API not available.');
@@ -15,12 +37,13 @@ export async function showNotification(event, syncSettings, log) {
     }
 
     const notificationId = `${event.kind}-${Date.now()}`;
+    const requireInteraction = syncSettings.notificationMode === NOTIFICATION_MODES.REQUIRE_INTERACTION;
 
     await createNotification(notificationId, {
         type: 'basic',
         iconUrl: '/icons/128.png',
         title: 'Jadisco.pl',
-        requireInteraction: syncSettings.notificationMode === NOTIFICATION_MODES.REQUIRE_INTERACTION,
+        requireInteraction,
         priority: 2,
         silent: Boolean(event.silent),
         message: event.message,

@@ -115,13 +115,23 @@ function normalizeConnectionState(value) {
 }
 
 export function migrateSyncSettings(items = {}) {
-    const legacyAutoOpenChat = normalizeBoolean(items.autoOpenChat, false);
+    const hasLegacyAutoOpenChat = typeof items.autoOpenChat === 'boolean';
 
     return {
         muted: Boolean(items.muted),
         volume: normalizeVolume(items.volume),
-        openChatOnStreamStart: normalizeBoolean(items.openChatOnStreamStart, legacyAutoOpenChat),
-        openChatOnNotificationClick: normalizeBoolean(items.openChatOnNotificationClick, legacyAutoOpenChat),
+        openChatOnStreamStart: normalizeBoolean(
+            items.openChatOnStreamStart,
+            hasLegacyAutoOpenChat ? items.autoOpenChat : SYNC_DEFAULTS.openChatOnStreamStart,
+        ),
+        openChatOnNotificationClick: normalizeBoolean(
+            items.openChatOnNotificationClick,
+            hasLegacyAutoOpenChat ? items.autoOpenChat : SYNC_DEFAULTS.openChatOnNotificationClick,
+        ),
+        openPageOnNotificationClick: normalizeBoolean(
+            items.openPageOnNotificationClick,
+            SYNC_DEFAULTS.openPageOnNotificationClick,
+        ),
         notifyOnStreamStart: normalizeBoolean(items.notifyOnStreamStart, SYNC_DEFAULTS.notifyOnStreamStart),
         notifyOnTopicChange: normalizeBoolean(items.notifyOnTopicChange, SYNC_DEFAULTS.notifyOnTopicChange),
         notificationMode: normalizeNotificationMode(items.notificationMode, items.removeNotification),
@@ -137,6 +147,7 @@ export async function loadSyncSettings() {
         Object.prototype.hasOwnProperty.call(items, 'removeNotification') ||
         typeof items.openChatOnStreamStart !== 'boolean' ||
         typeof items.openChatOnNotificationClick !== 'boolean' ||
+        typeof items.openPageOnNotificationClick !== 'boolean' ||
         typeof items.notifyOnStreamStart !== 'boolean' ||
         typeof items.notifyOnTopicChange !== 'boolean' ||
         items.notificationMode !== settings.notificationMode ||

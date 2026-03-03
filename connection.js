@@ -10,7 +10,7 @@ import {
 } from './constants.js';
 import { MESSAGE_TYPES } from './messages.js';
 import { handleNotificationClick, openChatSidePanelIfEnabled } from './navigation.js';
-import { showNotification } from './notifications.js';
+import { showNotification, showTestNotification } from './notifications.js';
 import { parseStatusMessage } from './parsers.js';
 import { playSound, unlockSound } from './playSound.js';
 import {
@@ -29,6 +29,7 @@ let reconnectAttempts = 0;
 let runtimeState = { ...RUNTIME_STATE_DEFAULTS };
 let syncSettings = null;
 const openedSidePanelWindowIds = new Set();
+let lastFocusedNormalWindowId = null;
 
 function log(level, ...args) {
     const prefix = `[${new Date().toLocaleTimeString()}]`;
@@ -53,25 +54,23 @@ async function persistRuntimeState(nextRuntimeState) {
 }
 
 function updateActionIcon(state = runtimeState) {
-    const iconSuffix =
-        state.connectionState === CONNECTION_STATES.DISCONNECTED ? '-disconnected' : state.streamActive ? '-online' : '';
+    const iconSuffix = state.streamActive ? '-online' : '-disconnected';
 
     chrome.action.setIcon({
         path: {
-            16: `/icons/16${iconSuffix}.png`,
             32: `/icons/32${iconSuffix}.png`,
         },
     });
 
     if (state.connectionState === CONNECTION_STATES.CONNECTED && state.streamActive) {
         chrome.action.setBadgeText({ text: 'LIVE' });
-        chrome.action.setBadgeBackgroundColor({ color: '#15803d' });
+        chrome.action.setBadgeBackgroundColor({ color: '#c01212' });
         return;
     }
 
     if (state.connectionState === CONNECTION_STATES.DISCONNECTED) {
         chrome.action.setBadgeText({ text: 'DISC' });
-        chrome.action.setBadgeBackgroundColor({ color: '#b45309' });
+        chrome.action.setBadgeBackgroundColor({ color: '#dcd10d' });
         return;
     }
 
@@ -119,6 +118,24 @@ function cleanupWebSocket() {
     stopHeartbeat();
 }
 
+function rememberFocusedNormalWindow(window) {
+    if (!window || !window.id || window.type !== 'normal') {
+        return;
+    }
+
+    lastFocusedNormalWindowId = window.id;
+}
+
+function seedLastFocusedNormalWindow() {
+    chrome.windows.getLastFocused({}, (window) => {
+        if (chrome.runtime.lastError) {
+            return;
+        }
+
+        rememberFocusedNormalWindow(window);
+    });
+}
+
 function scheduleReconnect() {
     if (reconnectTimeout) {
         return;
@@ -156,10 +173,11 @@ async function handleStatusMessage(messageJson) {
     const receivedAt = new Date().toISOString();
     const previousState = runtimeState;
     let nextRuntimeState = deriveRuntimeState(previousState, snapshot, receivedAt);
+    const streamStarted = didStreamStart(previousState, snapshot);
 
     await saveLastMessage(messageJson);
 
-    if (didStreamStart(previousState, snapshot)) {
+    if (streamStarted) {
         void playSound();
         await openChatSidePanelIfEnabled(syncSettings, log);
     }
@@ -172,7 +190,6 @@ async function handleStatusMessage(messageJson) {
         }
 
         await showNotification(event, syncSettings, log);
-
         nextRuntimeState = withNotificationMetadata(nextRuntimeState, event.notificationKey, new Date().toISOString());
     }
 
@@ -300,6 +317,7 @@ function registerSidePanelStateListeners() {
 
 function registerListeners() {
     registerSidePanelStateListeners();
+    seedLastFocusedNormalWindow();
 
     chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         if (message?.type === MESSAGE_TYPES.CLOSE_OFFSCREEN) {
@@ -317,6 +335,19 @@ function registerListeners() {
             return;
         }
 
+        if (message?.type === MESSAGE_TYPES.TEST_NOTIFICATION) {
+            void showTestNotification(log)
+                .then((notificationId) => {
+                    sendResponse({ ok: true, notificationId });
+                })
+                .catch((error) => {
+                    log('warn', 'Cannot create test notification.', error.message);
+                    sendResponse({ ok: false, error: error.message });
+                });
+
+            return true;
+        }
+
         if (message?.type === MESSAGE_TYPES.TOGGLE_SIDE_PANEL) {
             void toggleSidePanel(message.windowId)
                 .then((result) => {
@@ -332,7 +363,7 @@ function registerListeners() {
     });
 
     chrome.notifications.onClicked.addListener(() => {
-        void handleNotificationClick(syncSettings, log);
+        handleNotificationClick(syncSettings, lastFocusedNormalWindowId, log);
     });
 
     chrome.alarms.create(KEEP_ALIVE_ALARM_NAME, { periodInMinutes: 1 });
@@ -359,6 +390,7 @@ function registerListeners() {
             changes.autoOpenChat ||
             changes.openChatOnStreamStart ||
             changes.openChatOnNotificationClick ||
+            changes.openPageOnNotificationClick ||
             changes.muted ||
             changes.volume ||
             changes.notifyOnStreamStart ||
@@ -369,6 +401,26 @@ function registerListeners() {
             void loadSyncSettings().then((settings) => {
                 syncSettings = settings;
             });
+        }
+    });
+
+    chrome.windows.onFocusChanged.addListener((windowId) => {
+        if (windowId === chrome.windows.WINDOW_ID_NONE) {
+            return;
+        }
+
+        chrome.windows.get(windowId, {}, (window) => {
+            if (chrome.runtime.lastError) {
+                return;
+            }
+
+            rememberFocusedNormalWindow(window);
+        });
+    });
+
+    chrome.windows.onRemoved.addListener((windowId) => {
+        if (lastFocusedNormalWindowId === windowId) {
+            lastFocusedNormalWindowId = null;
         }
     });
 }

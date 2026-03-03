@@ -6,7 +6,6 @@
   "action": {
     "default_popup": "popup.html",
     "default_icon": {
-      "16": "icons/16-disconnected.png",
       "32": "icons/32-disconnected.png"
     }
   },

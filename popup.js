@@ -18,10 +18,12 @@ const logoEl = document.getElementById('logo');
 const settingsButtonEl = document.getElementById('settingsButton');
 const settingsEl = document.getElementById('settings');
 const testSoundEl = document.getElementById('testSound');
+const testNotificationEl = document.getElementById('testNotification');
 const manualRefreshEl = document.getElementById('manualRefresh');
 const openSidePanelEl = document.getElementById('openSidePanel');
 const openChatOnStreamStartEl = document.getElementById('openChatOnStreamStart');
 const openChatOnNotificationClickEl = document.getElementById('openChatOnNotificationClick');
+const openPageOnNotificationClickEl = document.getElementById('openPageOnNotificationClick');
 const extensionVersionEl = document.getElementById('extensionVersion');
 
 function queryTabs(queryInfo) {
@@ -179,6 +181,7 @@ async function saveOptions() {
         volume: Number.isFinite(volume) ? volume : 0.5,
         openChatOnStreamStart: openChatOnStreamStartEl.checked,
         openChatOnNotificationClick: openChatOnNotificationClickEl.checked,
+        openPageOnNotificationClick: openPageOnNotificationClickEl.checked,
         notifyOnStreamStart: notifyOnStreamStartEl.checked,
         notifyOnTopicChange: notifyOnTopicChangeEl.checked,
         notificationMode: notificationModeEl.checked
@@ -198,6 +201,7 @@ async function setUp() {
     notifyOnTopicChangeEl.checked = settings.notifyOnTopicChange;
     openChatOnStreamStartEl.checked = settings.openChatOnStreamStart;
     openChatOnNotificationClickEl.checked = settings.openChatOnNotificationClick;
+    openPageOnNotificationClickEl.checked = settings.openPageOnNotificationClick;
     if (extensionVersionEl) {
         extensionVersionEl.textContent = manifestVersion;
     }
@@ -283,6 +287,20 @@ function refresh() {
     }, 600);
 }
 
+async function testNotification() {
+    try {
+        const response = await sendRuntimeMessage({
+            type: MESSAGE_TYPES.TEST_NOTIFICATION,
+        });
+
+        if (!response?.ok) {
+            console.warn('Failed to create test notification:', response?.error ?? 'Unknown error');
+        }
+    } catch (error) {
+        console.warn('Failed to create test notification:', error.message);
+    }
+}
+
 function toggleOptions() {
     if (settingsEl.hasAttribute('hidden')) {
         settingsEl.removeAttribute('hidden');
@@ -333,7 +351,13 @@ openChatOnStreamStartEl.addEventListener('change', () => {
 openChatOnNotificationClickEl.addEventListener('change', () => {
     void saveOptions();
 });
+openPageOnNotificationClickEl.addEventListener('change', () => {
+    void saveOptions();
+});
 manualRefreshEl.addEventListener('click', refresh);
+testNotificationEl.addEventListener('click', () => {
+    void testNotification();
+});
 testSoundEl.addEventListener('click', () => {
     void createSound(Number(volumeEl.value));
 });
