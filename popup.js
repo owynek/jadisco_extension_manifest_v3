@@ -89,18 +89,6 @@ function updateWindow(windowId, updateInfo) {
     });
 }
 
-function formatConnectionState(connectionState) {
-    if (connectionState === 'connected') {
-        return 'Connected';
-    }
-
-    if (connectionState === 'connecting') {
-        return 'Connecting';
-    }
-
-    return 'Disconnected';
-}
-
 function assignDateToElement(timestamp, element) {
     if (!element) {
         return;
