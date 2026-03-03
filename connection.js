@@ -9,8 +9,8 @@ import {
     WS_URL,
 } from './constants.js';
 import { MESSAGE_TYPES } from './messages.js';
-import { showNotification } from './notifications.js';
 import { handleNotificationClick, openChatSidePanelIfEnabled } from './navigation.js';
+import { showNotification } from './notifications.js';
 import { parseStatusMessage } from './parsers.js';
 import { playSound, unlockSound } from './playSound.js';
 import {
@@ -28,6 +28,7 @@ let reconnectTimeout = null;
 let reconnectAttempts = 0;
 let runtimeState = { ...RUNTIME_STATE_DEFAULTS };
 let syncSettings = null;
+const openedSidePanelWindowIds = new Set();
 
 function log(level, ...args) {
     const prefix = `[${new Date().toLocaleTimeString()}]`;
@@ -261,10 +262,49 @@ async function closeOffscreenDocument() {
     }
 }
 
+async function toggleSidePanel(windowId) {
+    if (!windowId) {
+        throw new Error('Missing windowId for side panel toggle.');
+    }
+
+    const isPanelOpen = openedSidePanelWindowIds.has(windowId);
+
+    if (isPanelOpen) {
+        await chrome.sidePanel.close({ windowId });
+        openedSidePanelWindowIds.delete(windowId);
+        return { action: 'closed' };
+    }
+
+    await chrome.sidePanel.open({ windowId });
+    openedSidePanelWindowIds.add(windowId);
+    return { action: 'opened' };
+}
+
+function registerSidePanelStateListeners() {
+    if (chrome.sidePanel?.onOpened?.addListener) {
+        chrome.sidePanel.onOpened.addListener((info) => {
+            if (info?.windowId) {
+                openedSidePanelWindowIds.add(info.windowId);
+            }
+        });
+    }
+
+    if (chrome.sidePanel?.onClosed?.addListener) {
+        chrome.sidePanel.onClosed.addListener((info) => {
+            if (info?.windowId) {
+                openedSidePanelWindowIds.delete(info.windowId);
+            }
+        });
+    }
+}
+
 function registerListeners() {
-    chrome.runtime.onMessage.addListener((message) => {
+    registerSidePanelStateListeners();
+
+    chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         if (message?.type === MESSAGE_TYPES.CLOSE_OFFSCREEN) {
             void closeOffscreenDocument();
+            return;
         }
 
         if (message?.type === MESSAGE_TYPES.MANUAL_REFRESH) {
@@ -274,6 +314,20 @@ function registerListeners() {
             }
 
             void connectWebSocket();
+            return;
+        }
+
+        if (message?.type === MESSAGE_TYPES.TOGGLE_SIDE_PANEL) {
+            void toggleSidePanel(message.windowId)
+                .then((result) => {
+                    sendResponse({ ok: true, ...result });
+                })
+                .catch((error) => {
+                    log('warn', 'Cannot toggle side panel.', error.message);
+                    sendResponse({ ok: false, error: error.message });
+                });
+
+            return true;
         }
     });
 

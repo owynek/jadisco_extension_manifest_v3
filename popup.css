@@ -144,6 +144,16 @@ p {
     gap: 8px;
 }
 
+.settings-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+    padding: 0 10px;
+    font-size: 12px;
+    color: rgba(231, 231, 231, 0.432);
+}
+
 .sound-button {
     width: auto;
     min-width: 64px;

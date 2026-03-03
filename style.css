@@ -49,6 +49,10 @@ body.show-fallback .chat-frame {
   margin-bottom: 12px;
 }
 
+.chat-fallback button:hover {
+  background: #3a3a3a;
+}
+
 .chat-fallback a {
   color: #80ff76;
   text-decoration: none;

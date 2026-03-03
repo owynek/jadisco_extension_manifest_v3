@@ -22,6 +22,7 @@ const manualRefreshEl = document.getElementById('manualRefresh');
 const openSidePanelEl = document.getElementById('openSidePanel');
 const openChatOnStreamStartEl = document.getElementById('openChatOnStreamStart');
 const openChatOnNotificationClickEl = document.getElementById('openChatOnNotificationClick');
+const extensionVersionEl = document.getElementById('extensionVersion');
 
 function queryTabs(queryInfo) {
     return new Promise((resolve, reject) => {
@@ -45,6 +46,19 @@ function createTab(createProperties) {
             }
 
             resolve(tab);
+        });
+    });
+}
+
+function sendRuntimeMessage(message) {
+    return new Promise((resolve, reject) => {
+        chrome.runtime.sendMessage(message, (response) => {
+            if (chrome.runtime.lastError) {
+                reject(new Error(chrome.runtime.lastError.message));
+                return;
+            }
+
+            resolve(response);
         });
     });
 }
@@ -187,6 +201,7 @@ async function saveOptions() {
 
 async function setUp() {
     const [settings, popupState] = await Promise.all([loadSyncSettings(), loadPopupState()]);
+    const manifestVersion = chrome.runtime.getManifest().version;
 
     mutedEl.checked = settings.muted;
     volumeEl.value = String(settings.volume);
@@ -195,6 +210,9 @@ async function setUp() {
     notifyOnTopicChangeEl.checked = settings.notifyOnTopicChange;
     openChatOnStreamStartEl.checked = settings.openChatOnStreamStart;
     openChatOnNotificationClickEl.checked = settings.openChatOnNotificationClick;
+    if (extensionVersionEl) {
+        extensionVersionEl.textContent = manifestVersion;
+    }
 
     renderState(popupState.lastMsg, popupState.runtimeState);
 }
@@ -223,21 +241,39 @@ function openGitHub() {
     chrome.tabs.create({ url: 'https://github.com/owynek/jadisco_extension_manifest_v3/issues' });
 }
 
-function openSidePanel() {
-    chrome.windows.getCurrent((currentWindow) => {
-        if (chrome.runtime.lastError || !currentWindow || !currentWindow.id) {
-            return;
-        }
-
-        chrome.sidePanel.open({ windowId: currentWindow.id }, () => {
+function getCurrentWindow() {
+    return new Promise((resolve, reject) => {
+        chrome.windows.getCurrent((currentWindow) => {
             if (chrome.runtime.lastError) {
-                console.warn('Failed to open side panel:', chrome.runtime.lastError.message);
+                reject(new Error(chrome.runtime.lastError.message));
                 return;
             }
 
-            window.close();
+            if (!currentWindow || !currentWindow.id) {
+                reject(new Error('Current window is unavailable.'));
+                return;
+            }
+
+            resolve(currentWindow);
         });
     });
+}
+
+async function openSidePanel() {
+    try {
+        const currentWindow = await getCurrentWindow();
+        const response = await sendRuntimeMessage({
+            type: MESSAGE_TYPES.TOGGLE_SIDE_PANEL,
+            windowId: currentWindow.id,
+        });
+
+        if (!response?.ok) {
+            console.warn('Failed to toggle side panel:', response?.error ?? 'Unknown error');
+            return;
+        }
+    } catch (error) {
+        console.warn('Failed to toggle side panel:', error.message);
+    }
 }
 
 function hideSettings() {
@@ -284,7 +320,9 @@ logoEl.addEventListener('click', () => {
     void openJadisco();
 });
 reportEl.addEventListener('click', openGitHub);
-openSidePanelEl.addEventListener('click', openSidePanel);
+openSidePanelEl.addEventListener('click', () => {
+    void openSidePanel();
+});
 settingsButtonEl.addEventListener('click', toggleOptions);
 mutedEl.addEventListener('change', () => {
     void saveOptions();
