@@ -52,32 +52,6 @@ function updateWindow(windowId, updateInfo) {
     });
 }
 
-function getLastFocusedWindow() {
-    return new Promise((resolve, reject) => {
-        chrome.windows.getLastFocused({}, (window) => {
-            if (chrome.runtime.lastError) {
-                reject(new Error(chrome.runtime.lastError.message));
-                return;
-            }
-
-            resolve(window);
-        });
-    });
-}
-
-function openSidePanel(windowId) {
-    return new Promise((resolve, reject) => {
-        chrome.sidePanel.open({ windowId }, () => {
-            if (chrome.runtime.lastError) {
-                reject(new Error(chrome.runtime.lastError.message));
-                return;
-            }
-
-            resolve();
-        });
-    });
-}
-
 export async function openOrFocusJadiscoTab(log, preferredWindowId = null) {
     try {
         const tabs = await queryTabs({ url: JADISCO_URL_PATTERNS });
@@ -101,30 +75,6 @@ export async function openOrFocusJadiscoTab(log, preferredWindowId = null) {
         const createProperties = preferredWindowId ? { url: JADISCO_URL, windowId: preferredWindowId } : { url: JADISCO_URL };
         await createTab(createProperties);
     }
-}
-
-export async function openSidePanelInLastFocusedWindow(log) {
-    try {
-        const currentWindow = await getLastFocusedWindow();
-
-        if (!currentWindow || !currentWindow.id || currentWindow.type !== 'normal') {
-            return false;
-        }
-
-        await openSidePanel(currentWindow.id);
-        return true;
-    } catch (error) {
-        log('warn', 'Cannot open side panel automatically:', error.message);
-        return false;
-    }
-}
-
-export async function openChatSidePanelIfEnabled(syncSettings, log) {
-    if (!syncSettings.openChatOnStreamStart) {
-        return false;
-    }
-
-    return openSidePanelInLastFocusedWindow(log);
 }
 
 function openSidePanelForNotification(windowId, log, onSuccess, onError) {

@@ -9,7 +9,7 @@ import {
     WS_URL,
 } from './constants.js';
 import { MESSAGE_TYPES } from './messages.js';
-import { handleNotificationClick, openChatSidePanelIfEnabled } from './navigation.js';
+import { handleNotificationClick } from './navigation.js';
 import { showNotification, showTestNotification } from './notifications.js';
 import { parseStatusMessage } from './parsers.js';
 import { playSound, unlockSound } from './playSound.js';
@@ -179,7 +179,6 @@ async function handleStatusMessage(messageJson) {
 
     if (streamStarted) {
         void playSound();
-        await openChatSidePanelIfEnabled(syncSettings, log);
     }
 
     const notificationEvents = deriveNotificationEvents(previousState, snapshot, syncSettings);
@@ -388,7 +387,6 @@ function registerListeners() {
 
         if (
             changes.autoOpenChat ||
-            changes.openChatOnStreamStart ||
             changes.openChatOnNotificationClick ||
             changes.openPageOnNotificationClick ||
             changes.muted ||

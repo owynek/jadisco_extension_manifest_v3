@@ -120,10 +120,6 @@ export function migrateSyncSettings(items = {}) {
     return {
         muted: Boolean(items.muted),
         volume: normalizeVolume(items.volume),
-        openChatOnStreamStart: normalizeBoolean(
-            items.openChatOnStreamStart,
-            hasLegacyAutoOpenChat ? items.autoOpenChat : SYNC_DEFAULTS.openChatOnStreamStart,
-        ),
         openChatOnNotificationClick: normalizeBoolean(
             items.openChatOnNotificationClick,
             hasLegacyAutoOpenChat ? items.autoOpenChat : SYNC_DEFAULTS.openChatOnNotificationClick,
@@ -145,7 +141,7 @@ export async function loadSyncSettings() {
     if (
         Object.prototype.hasOwnProperty.call(items, 'autoOpenChat') ||
         Object.prototype.hasOwnProperty.call(items, 'removeNotification') ||
-        typeof items.openChatOnStreamStart !== 'boolean' ||
+        Object.prototype.hasOwnProperty.call(items, 'openChatOnStreamStart') ||
         typeof items.openChatOnNotificationClick !== 'boolean' ||
         typeof items.openPageOnNotificationClick !== 'boolean' ||
         typeof items.notifyOnStreamStart !== 'boolean' ||
@@ -162,7 +158,7 @@ export async function loadSyncSettings() {
 export async function saveSyncSettings(settings) {
     const normalizedSettings = migrateSyncSettings(settings);
     await storageSet('sync', normalizedSettings);
-    await storageRemove('sync', ['removeNotification', 'autoOpenChat']);
+    await storageRemove('sync', ['removeNotification', 'autoOpenChat', 'openChatOnStreamStart']);
     return normalizedSettings;
 }
 

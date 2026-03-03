@@ -21,7 +21,6 @@ const testSoundEl = document.getElementById('testSound');
 const testNotificationEl = document.getElementById('testNotification');
 const manualRefreshEl = document.getElementById('manualRefresh');
 const openSidePanelEl = document.getElementById('openSidePanel');
-const openChatOnStreamStartEl = document.getElementById('openChatOnStreamStart');
 const openChatOnNotificationClickEl = document.getElementById('openChatOnNotificationClick');
 const openPageOnNotificationClickEl = document.getElementById('openPageOnNotificationClick');
 const extensionVersionEl = document.getElementById('extensionVersion');
@@ -179,7 +178,6 @@ async function saveOptions() {
     await saveSyncSettings({
         muted: mutedEl.checked,
         volume: Number.isFinite(volume) ? volume : 0.5,
-        openChatOnStreamStart: openChatOnStreamStartEl.checked,
         openChatOnNotificationClick: openChatOnNotificationClickEl.checked,
         openPageOnNotificationClick: openPageOnNotificationClickEl.checked,
         notifyOnStreamStart: notifyOnStreamStartEl.checked,
@@ -199,7 +197,6 @@ async function setUp() {
     notificationModeEl.checked = settings.notificationMode === NOTIFICATION_MODES.AUTO_DISMISS;
     notifyOnStreamStartEl.checked = settings.notifyOnStreamStart;
     notifyOnTopicChangeEl.checked = settings.notifyOnTopicChange;
-    openChatOnStreamStartEl.checked = settings.openChatOnStreamStart;
     openChatOnNotificationClickEl.checked = settings.openChatOnNotificationClick;
     openPageOnNotificationClickEl.checked = settings.openPageOnNotificationClick;
     if (extensionVersionEl) {
@@ -343,9 +340,6 @@ notifyOnStreamStartEl.addEventListener('change', () => {
     void saveOptions();
 });
 notifyOnTopicChangeEl.addEventListener('change', () => {
-    void saveOptions();
-});
-openChatOnStreamStartEl.addEventListener('change', () => {
     void saveOptions();
 });
 openChatOnNotificationClickEl.addEventListener('change', () => {

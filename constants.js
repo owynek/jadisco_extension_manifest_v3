@@ -29,7 +29,6 @@ export const STORAGE_KEYS = Object.freeze({
 export const SYNC_DEFAULTS = Object.freeze({
     muted: false,
     volume: 0.5,
-    openChatOnStreamStart: false,
     openChatOnNotificationClick: true,
     openPageOnNotificationClick: true,
     notifyOnStreamStart: true,
