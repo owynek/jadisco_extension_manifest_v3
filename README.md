@@ -37,7 +37,7 @@ Side panel jest skonfigurowany w `manifest.json`:
 Panel mozna otworzyc na 3 sposoby:
 - recznie z popupu (ikona czatu),
 - automatycznie po starcie streamu (gdy wlaczone `Open chat on stream start`),
-- po kliknieciu powiadomienia (gdy wlaczone `autoOpenChat`).
+- po kliknieciu powiadomienia (gdy wlaczone `openChatOnNotificationClick`).
 
 ## Uzywane permissions
 

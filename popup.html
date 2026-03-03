@@ -1,7 +1,7 @@
 <!doctype html>
-<html>
+<html lang="en">
   <head>
-    <title>JaDisco</title>
+    <title>jaDisco.pl</title>
     <meta charset="UTF-8" />
     <link rel="stylesheet" type="text/css" href="popup.css" />
     <link rel="stylesheet" type="text/css" href="animation.css" />
@@ -10,14 +10,19 @@
   </head>
   <body>
     <header class="header">
-      <span id="openSidePanel" class="settings" title="Open side chat">💬</span>
+      <span
+        id="openSidePanel"
+        class="settings cursor-pointer"
+        title="Open side chat"
+        >💬</span
+      >
       <img id="logo" src="images/logo.png" alt="jaDisco.pl" />
-      <span id="settingsButton" class="settings">⚙️</span>
+      <span id="settingsButton" class="settings cursor-pointer">⚙️</span>
     </header>
     <div class="background"></div>
     <div class="info-wrapper">
       <div class="status-wrapper section">
-        <div>
+        <div class="info-line">
           <span>Status:</span>
           <span id="status"></span>
         </div>
@@ -26,9 +31,9 @@
       <div class="topic section">
         <div class="topic-title">
           <span>Topic:</span>
-          <span id="topicTime" class="date"></span>
+          <span id="topicTime" class="date">No data</span>
         </div>
-        <p id="topic"></p>
+        <p id="topic">No data yet</p>
       </div>
     </div>
     <div id="settings" class="settings-wrapper" hidden>
@@ -43,32 +48,64 @@
             value="0.5"
             step="0.1"
           />
-          <button id="testSound" class="sound-button">🔊 Test</button>
+          <button id="testSound" class="sound-button" type="button">
+            Test
+          </button>
         </div>
         <div class="input-group">
           <input class="cursor-pointer" type="checkbox" id="muted" />
-          <label class="cursor-pointer" for="muted">Mute</label>
+          <label class="cursor-pointer" for="muted">Mute sound</label>
+        </div>
+        <div class="input-group">
+          <input class="cursor-pointer" type="checkbox" id="notificationMode" />
+          <label class="cursor-pointer" for="notificationMode"
+            >Auto-dismiss notifications</label
+          >
         </div>
         <div class="input-group">
           <input
             class="cursor-pointer"
             type="checkbox"
-            id="removeNotification"
+            id="notifyOnStreamStart"
           />
-          <label class="cursor-pointer" for="removeNotification"
-            >Auto-remove notifications</label
+          <label class="cursor-pointer" for="notifyOnStreamStart"
+            >Notify on stream start</label
           >
         </div>
         <div class="input-group">
-          <input class="cursor-pointer" type="checkbox" id="autoOpenChat" />
-          <label class="cursor-pointer" for="autoOpenChat"
-            >Side chat via notification
-          </label>
+          <input
+            class="cursor-pointer"
+            type="checkbox"
+            id="notifyOnTopicChange"
+          />
+          <label class="cursor-pointer" for="notifyOnTopicChange"
+            >Notify on topic change</label
+          >
+        </div>
+        <div class="input-group">
+          <input
+            class="cursor-pointer"
+            type="checkbox"
+            id="openChatOnStreamStart"
+          />
+          <label class="cursor-pointer" for="openChatOnStreamStart"
+            >Open chat on stream start</label
+          >
+        </div>
+        <div class="input-group">
+          <input
+            class="cursor-pointer"
+            type="checkbox"
+            id="openChatOnNotificationClick"
+          />
+          <label class="cursor-pointer" for="openChatOnNotificationClick"
+            >Open chat from notification click</label
+          >
         </div>
       </div>
       <div class="action-buttons">
-        <button id="manualRefresh">🔄 Manual refresh</button>
-        <button id="report">🐛 Report bug or feature 🌟</button>
+        <button id="manualRefresh" type="button">🔄 Refresh status</button>
+        <button id="report" type="button">🐛 Report bug or feature 🌟</button>
       </div>
     </div>
     <script type="module" src="popup.js"></script>

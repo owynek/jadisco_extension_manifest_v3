@@ -1,41 +1,70 @@
+import { MESSAGE_TYPES } from './messages.js';
+import { loadSyncSettings } from './storage.js';
+
 let isPlaying = false;
 let fallbackTimeout = null;
 
-export async function createSound(volume) {
-    const hasDoc = await chrome.offscreen.hasDocument();
-    if (!hasDoc) {
+function hasOffscreenDocument() {
+    return chrome.offscreen.hasDocument();
+}
+
+async function ensureOffscreenDocument() {
+    const hasDocument = await hasOffscreenDocument();
+
+    if (!hasDocument) {
         await chrome.offscreen.createDocument({
             url: chrome.runtime.getURL('audio.html'),
             reasons: ['AUDIO_PLAYBACK'],
             justification: 'Play notification sound when stream starts',
         });
     }
-    await chrome.runtime.sendMessage({ volume: volume });
 }
 
-export function playSound() {
-    if (isPlaying) return;
+function sendRuntimeMessage(message) {
+    return new Promise((resolve, reject) => {
+        chrome.runtime.sendMessage(message, (response) => {
+            if (chrome.runtime.lastError) {
+                reject(new Error(chrome.runtime.lastError.message));
+                return;
+            }
+
+            resolve(response);
+        });
+    });
+}
+
+export async function createSound(volume) {
+    await ensureOffscreenDocument();
+    await sendRuntimeMessage({
+        type: MESSAGE_TYPES.PLAY_SOUND,
+        volume: Number(volume),
+    });
+}
+
+export async function playSound() {
+    if (isPlaying) {
+        return;
+    }
+
     isPlaying = true;
 
-    chrome.storage.sync.get(
-        { muted: false, volume: 0.5 },
-        async (items) => {
-            if (!items.muted) {
-                try {
-                    await createSound(items.volume);
+    try {
+        const settings = await loadSyncSettings();
 
-                    fallbackTimeout = setTimeout(() => {
-                        unlockSound();
-                    }, 3000);
-                } catch (e) {
-                    console.error('🔴 Error in playSound:', e);
-                    unlockSound();
-                }
-            } else {
-                unlockSound();
-            }
-        },
-    );
+        if (settings.muted) {
+            unlockSound();
+            return;
+        }
+
+        await createSound(settings.volume);
+
+        fallbackTimeout = setTimeout(() => {
+            unlockSound();
+        }, 3000);
+    } catch (error) {
+        console.error('Error in playSound:', error);
+        unlockSound();
+    }
 }
 
 export function unlockSound() {
@@ -43,5 +72,6 @@ export function unlockSound() {
         clearTimeout(fallbackTimeout);
         fallbackTimeout = null;
     }
+
     isPlaying = false;
 }

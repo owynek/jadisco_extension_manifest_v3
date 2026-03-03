@@ -3,16 +3,31 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>jaDisco.pl</title>
+    <title>Jadisco.pl</title>
     <link rel="stylesheet" href="./style.css" />
   </head>
   <body>
     <iframe
+      id="chatFrame"
       src="https://poorchat.net/channels/jadisco"
       class="chat-frame"
       allow="fullscreen; encrypted-media"
       spellcheck="false"
       loading="lazy"
+      title="Jadisco chat"
     ></iframe>
+    <div id="chatFallback" class="chat-fallback" hidden>
+      <p>Unable to load chat in the side panel.</p>
+      <button id="openJaDiscoButton" type="button">jadisco.pl</button>
+      <a
+        id="chatFallbackLink"
+        href="https://poorchat.net/channels/jadisco"
+        target="_blank"
+        rel="noreferrer"
+      >
+        Open chat in a new tab
+      </a>
+    </div>
+    <script type="module" src="sidepanel.js"></script>
   </body>
 </html>

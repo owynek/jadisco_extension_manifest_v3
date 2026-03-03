@@ -5,6 +5,15 @@ body {
   margin: 0;
   padding: 0;
   overflow: hidden;
+  background: #0f0f0f;
+  color: #e7e7e7;
+  font-family: Consolas, 'Courier New', monospace;
+}
+
+body.show-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .chat-frame {
@@ -12,4 +21,35 @@ body {
   height: 100%;
   border: 0;
   zoom: 1.05;
+}
+
+body.show-fallback .chat-frame {
+  display: none;
+}
+
+.chat-fallback {
+  max-width: 320px;
+  padding: 24px;
+  text-align: center;
+}
+
+.chat-fallback p {
+  margin: 0 0 16px;
+  line-height: 1.4;
+}
+
+.chat-fallback button {
+  width: 100%;
+  height: 38px;
+  border: 0;
+  cursor: pointer;
+  color: #e7e7e7;
+  background: #2b2b2b;
+  font-family: inherit;
+  margin-bottom: 12px;
+}
+
+.chat-fallback a {
+  color: #80ff76;
+  text-decoration: none;
 }

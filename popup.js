@@ -1,8 +1,14 @@
+import { JADISCO_URL, JADISCO_URL_PATTERNS, NOTIFICATION_MODES } from './constants.js';
+import { MESSAGE_TYPES } from './messages.js';
+import { parseStatusMessage } from './parsers.js';
 import { createSound } from './playSound.js';
+import { loadPopupState, loadSyncSettings, saveSyncSettings } from './storage.js';
 
 const mutedEl = document.getElementById('muted');
 const volumeEl = document.getElementById('volume');
-const removeNotificationEl = document.getElementById('removeNotification');
+const notificationModeEl = document.getElementById('notificationMode');
+const notifyOnStreamStartEl = document.getElementById('notifyOnStreamStart');
+const notifyOnTopicChangeEl = document.getElementById('notifyOnTopicChange');
 const reportEl = document.getElementById('report');
 const statusEl = document.getElementById('status');
 const statusTimeEl = document.getElementById('statusTime');
@@ -14,134 +20,203 @@ const settingsEl = document.getElementById('settings');
 const testSoundEl = document.getElementById('testSound');
 const manualRefreshEl = document.getElementById('manualRefresh');
 const openSidePanelEl = document.getElementById('openSidePanel');
-const autoOpenChatEl = document.getElementById('autoOpenChat');
-const JADISCO_URL = 'https://jadisco.pl/';
+const openChatOnStreamStartEl = document.getElementById('openChatOnStreamStart');
+const openChatOnNotificationClickEl = document.getElementById('openChatOnNotificationClick');
 
-function isJadiscoUrl(url) {
-    if (!url) {
-        return false;
-    }
-
-    try {
-        const parsedUrl = new URL(url);
-        return parsedUrl.hostname === 'jadisco.pl' || parsedUrl.hostname === 'www.jadisco.pl';
-    } catch (_) {
-        return false;
-    }
-}
-
-const TODAY = new Date();
-const TODAY_ONLY = new Date(TODAY.getFullYear(), TODAY.getMonth(), TODAY.getDate());
-
-chrome.runtime.onMessage.addListener((message) => {
-    if (message.type === 'statusUpdate') {
-        assignDataFromMsg(message.payload);
-    }
-});
-
-const saveOptions = () => {
-    const MUTED = mutedEl.checked;
-    const VOLUME = volumeEl.value;
-    const REMOVE_NOTIFICATION = removeNotificationEl.checked;
-    const AUTO_OPEN_CHAT = autoOpenChatEl.checked;
-
-    chrome.storage.sync.set(
-        { muted: MUTED, volume: VOLUME, removeNotification: REMOVE_NOTIFICATION, autoOpenChat: AUTO_OPEN_CHAT }
-    );
-};
-
-function assingDateToElement(dateOnly, element, fullDate) {
-    if (dateOnly.getTime() === TODAY_ONLY.getTime()) {
-        element.innerText = fullDate.toLocaleTimeString(['pl-PL'], {
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: false,
-        });
-    } else {
-        element.innerText = fullDate.toLocaleDateString(['pl-PL'], {
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: false,
-        });
-    }
-}
-
-function assignDataFromMsg(lastMsg) {
-    if (!lastMsg.data) {
-        statusEl.innerHTML = 'Error';
-        statusEl.className = 'glow glow-red';
-        return;
-    }
-    const strimActive = lastMsg.data.services.find(service => service.status.status === 1);
-    if (strimActive) {
-        statusEl.innerHTML = 'On air';
-        statusEl.className = 'glow glow-green';
-        const statusDate = new Date(strimActive.status.online_at);
-        const statusDateOnly = new Date(statusDate.getFullYear(), statusDate.getMonth(), statusDate.getDate());
-        assingDateToElement(statusDateOnly, statusTimeEl, statusDate);
-    } else {
-        const stream = lastMsg.data.services.find(service => service.status.status === 0);
-        statusEl.innerHTML = 'Offline';
-        statusEl.className = 'glow glow-red';
-        const statusDate = new Date(stream.status.offline_at);
-        const statusDateOnly = new Date(statusDate.getFullYear(), statusDate.getMonth(), statusDate.getDate());
-        assingDateToElement(statusDateOnly, statusTimeEl, statusDate);
-    }
-    try {
-        topicTimeEl.innerText = '';
-
-        const inputDate = new Date(lastMsg.data.topic.updated_at);
-        const inputDateOnly = new Date(inputDate.getFullYear(), inputDate.getMonth(), inputDate.getDate());
-        assingDateToElement(inputDateOnly, topicTimeEl, inputDate);
-
-        topicEl.innerText = '';
-        topicEl.innerText = lastMsg.data.topic.text;
-    } catch (e) {
-        console.log(e.message);
-        console.log(lastMsg);
-    }
-}
-
-const setUp = () => {
-    chrome.storage.sync.get(
-        { muted: false, volume: 0.5, removeNotification: true, autoOpenChat: false },
-        (items) => {
-            mutedEl.checked = items.muted;
-            volumeEl.value = items.volume;
-            removeNotificationEl.checked = items.removeNotification;
-            autoOpenChatEl.checked = items.autoOpenChat;
-        },
-    );
-    chrome.storage.local.get(
-        { lastMsg: {} },
-        ({ lastMsg }) => {
-            assignDataFromMsg(lastMsg);
-        },
-    );
-};
-
-function openJadisco() {
-    chrome.tabs.query({}, (tabs) => {
-        if (chrome.runtime.lastError) {
-            chrome.tabs.create({ url: JADISCO_URL });
-            return;
-        }
-
-        const tabToFocus = (tabs || []).find((tab) => isJadiscoUrl(tab.url));
-
-        if (!tabToFocus) {
-            chrome.tabs.create({ url: JADISCO_URL });
-            return;
-        }
-
-        chrome.tabs.update(tabToFocus.id, { active: true }, () => {
+function queryTabs(queryInfo) {
+    return new Promise((resolve, reject) => {
+        chrome.tabs.query(queryInfo, (tabs) => {
             if (chrome.runtime.lastError) {
-                chrome.tabs.create({ url: JADISCO_URL });
+                reject(new Error(chrome.runtime.lastError.message));
                 return;
             }
-            chrome.windows.update(tabToFocus.windowId, { focused: true });
+
+            resolve(tabs || []);
         });
     });
+}
+
+function createTab(createProperties) {
+    return new Promise((resolve, reject) => {
+        chrome.tabs.create(createProperties, (tab) => {
+            if (chrome.runtime.lastError) {
+                reject(new Error(chrome.runtime.lastError.message));
+                return;
+            }
+
+            resolve(tab);
+        });
+    });
+}
+
+function updateTab(tabId, updateProperties) {
+    return new Promise((resolve, reject) => {
+        chrome.tabs.update(tabId, updateProperties, (tab) => {
+            if (chrome.runtime.lastError) {
+                reject(new Error(chrome.runtime.lastError.message));
+                return;
+            }
+
+            resolve(tab);
+        });
+    });
+}
+
+function updateWindow(windowId, updateInfo) {
+    return new Promise((resolve, reject) => {
+        chrome.windows.update(windowId, updateInfo, (window) => {
+            if (chrome.runtime.lastError) {
+                reject(new Error(chrome.runtime.lastError.message));
+                return;
+            }
+
+            resolve(window);
+        });
+    });
+}
+
+function formatConnectionState(connectionState) {
+    if (connectionState === 'connected') {
+        return 'Connected';
+    }
+
+    if (connectionState === 'connecting') {
+        return 'Connecting';
+    }
+
+    return 'Disconnected';
+}
+
+function assignDateToElement(timestamp, element) {
+    if (!element) {
+        return;
+    }
+
+    if (!timestamp) {
+        element.textContent = 'No data';
+        return;
+    }
+
+    const fullDate = new Date(timestamp);
+
+    if (Number.isNaN(fullDate.getTime())) {
+        element.textContent = 'No data';
+        return;
+    }
+
+    const today = new Date();
+    const isToday =
+        today.getFullYear() === fullDate.getFullYear() &&
+        today.getMonth() === fullDate.getMonth() &&
+        today.getDate() === fullDate.getDate();
+
+    element.textContent = isToday
+        ? fullDate.toLocaleTimeString('en-GB', {
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: false,
+          })
+        : fullDate.toLocaleString('en-GB', {
+              day: '2-digit',
+              month: '2-digit',
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: false,
+          });
+}
+
+function buildSnapshotFromRuntimeState(runtimeState) {
+    if (typeof runtimeState?.streamActive !== 'boolean') {
+        return null;
+    }
+
+    return {
+        streamActive: runtimeState.streamActive,
+        onlineAt: runtimeState.streamActive ? runtimeState.lastMessageAt : null,
+        offlineAt: runtimeState.streamActive ? null : runtimeState.lastMessageAt,
+        topic: runtimeState.topic,
+        topicUpdatedAt: runtimeState.topicUpdatedAt,
+    };
+}
+
+function renderSnapshot(snapshot) {
+    if (!snapshot) {
+        statusEl.textContent = 'No data yet';
+        statusEl.className = 'glow glow-red';
+        statusTimeEl.textContent = 'No data';
+        topicEl.textContent = 'No data yet';
+        topicTimeEl.textContent = 'No data';
+        return;
+    }
+
+    if (snapshot.streamActive) {
+        statusEl.textContent = 'Live';
+        statusEl.className = 'glow glow-green';
+        assignDateToElement(snapshot.onlineAt, statusTimeEl);
+    } else {
+        statusEl.textContent = 'Offline';
+        statusEl.className = 'glow glow-red';
+        assignDateToElement(snapshot.offlineAt, statusTimeEl);
+    }
+
+    topicEl.textContent = snapshot.topic ?? 'No data yet';
+    assignDateToElement(snapshot.topicUpdatedAt, topicTimeEl);
+}
+
+
+function renderState(lastMsg, runtimeState) {
+    const parsedSnapshot = parseStatusMessage(lastMsg) ?? buildSnapshotFromRuntimeState(runtimeState);
+    renderSnapshot(parsedSnapshot);
+}
+
+async function saveOptions() {
+    const volume = Number(volumeEl.value);
+
+    await saveSyncSettings({
+        muted: mutedEl.checked,
+        volume: Number.isFinite(volume) ? volume : 0.5,
+        openChatOnStreamStart: openChatOnStreamStartEl.checked,
+        openChatOnNotificationClick: openChatOnNotificationClickEl.checked,
+        notifyOnStreamStart: notifyOnStreamStartEl.checked,
+        notifyOnTopicChange: notifyOnTopicChangeEl.checked,
+        notificationMode: notificationModeEl.checked
+            ? NOTIFICATION_MODES.AUTO_DISMISS
+            : NOTIFICATION_MODES.REQUIRE_INTERACTION,
+    });
+}
+
+async function setUp() {
+    const [settings, popupState] = await Promise.all([loadSyncSettings(), loadPopupState()]);
+
+    mutedEl.checked = settings.muted;
+    volumeEl.value = String(settings.volume);
+    notificationModeEl.checked = settings.notificationMode === NOTIFICATION_MODES.AUTO_DISMISS;
+    notifyOnStreamStartEl.checked = settings.notifyOnStreamStart;
+    notifyOnTopicChangeEl.checked = settings.notifyOnTopicChange;
+    openChatOnStreamStartEl.checked = settings.openChatOnStreamStart;
+    openChatOnNotificationClickEl.checked = settings.openChatOnNotificationClick;
+
+    renderState(popupState.lastMsg, popupState.runtimeState);
+}
+
+async function openJadisco() {
+    try {
+        const tabs = await queryTabs({ url: JADISCO_URL_PATTERNS });
+        const tabToFocus = tabs[0];
+
+        if (!tabToFocus || tabToFocus.id === undefined) {
+            await createTab({ url: JADISCO_URL });
+            return;
+        }
+
+        await updateTab(tabToFocus.id, { active: true });
+
+        if (tabToFocus.windowId !== undefined) {
+            await updateWindow(tabToFocus.windowId, { focused: true });
+        }
+    } catch (_) {
+        await createTab({ url: JADISCO_URL });
+    }
 }
 
 function openGitHub() {
@@ -150,7 +225,7 @@ function openGitHub() {
 
 function openSidePanel() {
     chrome.windows.getCurrent((currentWindow) => {
-        if (!currentWindow || !currentWindow.id) {
+        if (chrome.runtime.lastError || !currentWindow || !currentWindow.id) {
             return;
         }
 
@@ -159,59 +234,80 @@ function openSidePanel() {
                 console.warn('Failed to open side panel:', chrome.runtime.lastError.message);
                 return;
             }
+
             window.close();
         });
     });
 }
 
 function hideSettings() {
-    settingsEl.setAttribute('hidden', null);
-    settingsButtonEl.innerText = '⚙️';
+    settingsEl.setAttribute('hidden', '');
+    settingsButtonEl.textContent = '⚙️';
+    settingsButtonEl.setAttribute('aria-expanded', 'false');
 }
 
-const refresh = () => {
-    chrome.runtime.sendMessage({ type: 'manualRefresh' });
-    manualRefreshEl.innerText = '✔️ Done';
+function refresh() {
+    chrome.runtime.sendMessage({ type: MESSAGE_TYPES.MANUAL_REFRESH }, () => {
+        void chrome.runtime.lastError;
+    });
+
+    manualRefreshEl.textContent = 'Updated';
+
     setTimeout(() => {
-        manualRefreshEl.innerText = '🔄 Manual refresh';
+        manualRefreshEl.textContent = 'Refresh status';
         hideSettings();
     }, 600);
 }
 
-const toggleOptions = () => {
+function toggleOptions() {
     if (settingsEl.hasAttribute('hidden')) {
         settingsEl.removeAttribute('hidden');
-        settingsButtonEl.innerText = '❌';
-    } else {
-        hideSettings();
+        settingsButtonEl.textContent = '❌';
+        settingsButtonEl.setAttribute('aria-expanded', 'true');
+        return;
     }
-};
 
-window.onblur = function() {
-    logoEl.removeEventListener('click', openJadisco);
-    settingsButtonEl.removeEventListener('click', toggleOptions);
-    reportEl.removeEventListener('click', openGitHub);
-    openSidePanelEl.removeEventListener('click', openSidePanel);
-    mutedEl.removeEventListener('change', saveOptions);
-    volumeEl.removeEventListener('change', saveOptions);
-    removeNotificationEl.removeEventListener('change', saveOptions);
-    autoOpenChatEl.removeEventListener('change', saveOptions);
-    manualRefreshEl.removeEventListener('click', refresh);
-    testSoundEl.removeEventListener('click', () => {
-        createSound(volumeEl.value);
-    });
-};
+    hideSettings();
+}
 
-document.addEventListener('DOMContentLoaded', setUp);
-logoEl.addEventListener('click', openJadisco);
+chrome.runtime.onMessage.addListener((message) => {
+    if (message?.type === MESSAGE_TYPES.STATUS_UPDATE) {
+        renderState(message.payload, message.runtimeState);
+    }
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    void setUp();
+});
+
+logoEl.addEventListener('click', () => {
+    void openJadisco();
+});
 reportEl.addEventListener('click', openGitHub);
 openSidePanelEl.addEventListener('click', openSidePanel);
 settingsButtonEl.addEventListener('click', toggleOptions);
-mutedEl.addEventListener('change', saveOptions);
-volumeEl.addEventListener('change', saveOptions);
-removeNotificationEl.addEventListener('change', saveOptions);
-autoOpenChatEl.addEventListener('change', saveOptions);
+mutedEl.addEventListener('change', () => {
+    void saveOptions();
+});
+volumeEl.addEventListener('change', () => {
+    void saveOptions();
+});
+notificationModeEl.addEventListener('change', () => {
+    void saveOptions();
+});
+notifyOnStreamStartEl.addEventListener('change', () => {
+    void saveOptions();
+});
+notifyOnTopicChangeEl.addEventListener('change', () => {
+    void saveOptions();
+});
+openChatOnStreamStartEl.addEventListener('change', () => {
+    void saveOptions();
+});
+openChatOnNotificationClickEl.addEventListener('change', () => {
+    void saveOptions();
+});
 manualRefreshEl.addEventListener('click', refresh);
 testSoundEl.addEventListener('click', () => {
-    createSound(volumeEl.value);
+    void createSound(Number(volumeEl.value));
 });
