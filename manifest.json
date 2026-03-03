@@ -30,7 +30,7 @@
     "sidePanel",
     "tabs"
   ],
-  "version": "2.2.2",
+  "version": "2.3.0",
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'; media-src 'self';"
   }
