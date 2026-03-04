@@ -1,17 +1,4 @@
-import { JADISCO_URL, JADISCO_URL_PATTERNS } from './constants.js';
-
-function queryTabs(queryInfo) {
-    return new Promise((resolve, reject) => {
-        chrome.tabs.query(queryInfo, (tabs) => {
-            if (chrome.runtime.lastError) {
-                reject(new Error(chrome.runtime.lastError.message));
-                return;
-            }
-
-            resolve(tabs || []);
-        });
-    });
-}
+import { JADISCO_URL } from './constants.js';
 
 function createTab(createProperties) {
     return new Promise((resolve, reject) => {
@@ -26,54 +13,14 @@ function createTab(createProperties) {
     });
 }
 
-function updateTab(tabId, updateProperties) {
-    return new Promise((resolve, reject) => {
-        chrome.tabs.update(tabId, updateProperties, (tab) => {
-            if (chrome.runtime.lastError) {
-                reject(new Error(chrome.runtime.lastError.message));
-                return;
-            }
+export async function openJadiscoTab(log, preferredWindowId = null) {
+    const createProperties = preferredWindowId ? { url: JADISCO_URL, windowId: preferredWindowId } : { url: JADISCO_URL };
 
-            resolve(tab);
-        });
-    });
-}
-
-function updateWindow(windowId, updateInfo) {
-    return new Promise((resolve, reject) => {
-        chrome.windows.update(windowId, updateInfo, (window) => {
-            if (chrome.runtime.lastError) {
-                reject(new Error(chrome.runtime.lastError.message));
-                return;
-            }
-
-            resolve(window);
-        });
-    });
-}
-
-export async function openOrFocusJadiscoTab(log, preferredWindowId = null) {
     try {
-        const tabs = await queryTabs({ url: JADISCO_URL_PATTERNS });
-        const tabToFocus =
-            tabs.find((tab) => preferredWindowId && tab.windowId === preferredWindowId) ??
-            tabs[0];
-
-        if (!tabToFocus || tabToFocus.id === undefined) {
-            const createProperties = preferredWindowId ? { url: JADISCO_URL, windowId: preferredWindowId } : { url: JADISCO_URL };
-            await createTab(createProperties);
-            return;
-        }
-
-        await updateTab(tabToFocus.id, { active: true });
-
-        if (tabToFocus.windowId !== undefined) {
-            await updateWindow(tabToFocus.windowId, { focused: true });
-        }
-    } catch (error) {
-        log('warn', 'Cannot focus Jadisco tab, opening a new one instead.', error.message);
-        const createProperties = preferredWindowId ? { url: JADISCO_URL, windowId: preferredWindowId } : { url: JADISCO_URL };
         await createTab(createProperties);
+    } catch (error) {
+        log('warn', 'Cannot open Jadisco tab in preferred window, opening a new one instead.', error.message);
+        await createTab({ url: JADISCO_URL });
     }
 }
 
@@ -94,7 +41,7 @@ export function handleNotificationClick(syncSettings, preferredWindowId, log) {
     const openPageOnNotificationClick = Boolean(syncSettings?.openPageOnNotificationClick);
 
     const openPage = () => {
-        void openOrFocusJadiscoTab(log, preferredWindowId);
+        void openJadiscoTab(log, preferredWindowId);
     };
 
     if (openChatOnNotificationClick && preferredWindowId) {

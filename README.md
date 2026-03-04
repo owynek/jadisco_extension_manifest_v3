@@ -50,8 +50,7 @@ Aktualna lista z `manifest.json`:
   "storage",
   "alarms",
   "background",
-  "sidePanel",
-  "tabs"
+  "sidePanel"
 ]
 ```
 
@@ -63,7 +62,6 @@ Aktualna lista z `manifest.json`:
 | `alarms` | Keep-alive i reaktywacja polaczenia po wybudzeniu. |
 | `background` | Dzialanie logiki monitoringu w tle (service worker + harmonogram). |
 | `sidePanel` | Otwieranie panelu bocznego z czatem przez `chrome.sidePanel.open`. |
-| `tabs` | Otwieranie/fokusowanie karty Jadisco i wyszukiwanie istniejacych kart. |
 
 Uwaga: aktualny `manifest.json` nie definiuje `host_permissions`.
 

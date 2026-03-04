@@ -1,4 +1,4 @@
-import { JADISCO_URL, JADISCO_URL_PATTERNS, NOTIFICATION_MODES } from './constants.js';
+import { JADISCO_URL, NOTIFICATION_MODES } from './constants.js';
 import { MESSAGE_TYPES } from './messages.js';
 import { parseStatusMessage } from './parsers.js';
 import { createSound } from './playSound.js';
@@ -25,19 +25,6 @@ const openChatOnNotificationClickEl = document.getElementById('openChatOnNotific
 const openPageOnNotificationClickEl = document.getElementById('openPageOnNotificationClick');
 const extensionVersionEl = document.getElementById('extensionVersion');
 
-function queryTabs(queryInfo) {
-    return new Promise((resolve, reject) => {
-        chrome.tabs.query(queryInfo, (tabs) => {
-            if (chrome.runtime.lastError) {
-                reject(new Error(chrome.runtime.lastError.message));
-                return;
-            }
-
-            resolve(tabs || []);
-        });
-    });
-}
-
 function createTab(createProperties) {
     return new Promise((resolve, reject) => {
         chrome.tabs.create(createProperties, (tab) => {
@@ -60,32 +47,6 @@ function sendRuntimeMessage(message) {
             }
 
             resolve(response);
-        });
-    });
-}
-
-function updateTab(tabId, updateProperties) {
-    return new Promise((resolve, reject) => {
-        chrome.tabs.update(tabId, updateProperties, (tab) => {
-            if (chrome.runtime.lastError) {
-                reject(new Error(chrome.runtime.lastError.message));
-                return;
-            }
-
-            resolve(tab);
-        });
-    });
-}
-
-function updateWindow(windowId, updateInfo) {
-    return new Promise((resolve, reject) => {
-        chrome.windows.update(windowId, updateInfo, (window) => {
-            if (chrome.runtime.lastError) {
-                reject(new Error(chrome.runtime.lastError.message));
-                return;
-            }
-
-            resolve(window);
         });
     });
 }
@@ -207,23 +168,7 @@ async function setUp() {
 }
 
 async function openJadisco() {
-    try {
-        const tabs = await queryTabs({ url: JADISCO_URL_PATTERNS });
-        const tabToFocus = tabs[0];
-
-        if (!tabToFocus || tabToFocus.id === undefined) {
-            await createTab({ url: JADISCO_URL });
-            return;
-        }
-
-        await updateTab(tabToFocus.id, { active: true });
-
-        if (tabToFocus.windowId !== undefined) {
-            await updateWindow(tabToFocus.windowId, { focused: true });
-        }
-    } catch (_) {
-        await createTab({ url: JADISCO_URL });
-    }
+    await createTab({ url: JADISCO_URL });
 }
 
 function openGitHub() {

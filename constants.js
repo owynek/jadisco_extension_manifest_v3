@@ -7,7 +7,6 @@ export const KEEP_ALIVE_ALARM_NAME = 'keepAlive';
 export const NOTIFICATION_CLEAR_DELAY = 15000;
 
 export const JADISCO_URL = 'https://jadisco.pl/';
-export const JADISCO_URL_PATTERNS = ['*://jadisco.pl/*', '*://www.jadisco.pl/*'];
 export const SIDEPANEL_CHAT_URL = 'https://poorchat.net/channels/jadisco';
 
 export const CONNECTION_STATES = Object.freeze({

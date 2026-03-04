@@ -26,8 +26,7 @@
     "storage",
     "alarms",
     "background",
-    "sidePanel",
-    "tabs"
+    "sidePanel"
   ],
   "version": "2.3.1",
   "content_security_policy": {
