@@ -66,7 +66,7 @@ function updateActionIcon(state = runtimeState) {
         };
     } else {
         path = {
-            48: '/icons/48.png',
+            32: '/icons/32.png',
         };
     }
 
