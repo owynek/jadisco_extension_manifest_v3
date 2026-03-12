@@ -54,34 +54,23 @@ async function persistRuntimeState(nextRuntimeState) {
 }
 
 function updateActionIcon(state = runtimeState) {
-    const iconSuffix = state.streamActive ? '-online' : '-disconnected';
-
-    chrome.action.setIcon({
-        path: {
-            32: `/icons/32${iconSuffix}.png`,
-        },
-    });
-
-    if (state.connectionState === CONNECTION_STATES.CONNECTED && state.streamActive) {
-        chrome.action.setBadgeText({ text: 'LIVE' });
-        chrome.action.setBadgeBackgroundColor({ color: '#c01212' });
-        return;
-    }
+    let path;
 
     if (state.connectionState === CONNECTION_STATES.DISCONNECTED) {
-        chrome.action.setBadgeText({ text: 'DISC' });
-        chrome.action.setBadgeBackgroundColor({ color: '#dcd10d' });
-        return;
+        path = {
+            32: '/icons/32-disconnected.png',
+        };
+    } else if (state.connectionState === CONNECTION_STATES.CONNECTED && state.streamActive) {
+        path = {
+            32: '/icons/32-online.png',
+        };
+    } else {
+        path = {
+            48: '/icons/48.png',
+        };
     }
 
-    if (state.connectionState === CONNECTION_STATES.CONNECTING) {
-        chrome.action.setBadgeText({ text: 'SYNC' });
-        chrome.action.setBadgeBackgroundColor({ color: '#2563eb' });
-        return;
-    }
-
-    chrome.action.setBadgeText({ text: 'OFF' });
-    chrome.action.setBadgeBackgroundColor({ color: '#4b5563' });
+    chrome.action.setIcon({ path });
 }
 
 function startHeartbeat() {
@@ -426,6 +415,7 @@ function registerListeners() {
 export async function bootstrapBackground() {
     syncSettings = await loadSyncSettings();
     runtimeState = await loadRuntimeState();
+    chrome.action.setBadgeText({ text: '' });
     updateActionIcon(runtimeState);
     registerListeners();
     await connectWebSocket();
