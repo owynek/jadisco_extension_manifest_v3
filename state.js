@@ -44,7 +44,7 @@ export function deriveNotificationEvents(previousState, snapshot, syncSettings) 
         events.push({
             kind: 'stream',
             notificationKey: `stream:${snapshot.onlineAt ?? 'unknown'}`,
-            message: snapshot.topic ? `Stream started: ${snapshot.topic}` : 'Stream just started.',
+            message: snapshot.topic ? `Strumień właśnie się zaczął: ${snapshot.topic}` : 'Strumień właśnie się zaczął!',
             silent: true,
         });
     }
@@ -53,7 +53,7 @@ export function deriveNotificationEvents(previousState, snapshot, syncSettings) 
         events.push({
             kind: 'topic',
             notificationKey: `topic:${snapshot.topicUpdatedAt ?? nextTopic}`,
-            message: `New topic: ${nextTopic}`,
+            message: `Nowy temat: ${nextTopic}`,
             silent: false,
         });
     }
